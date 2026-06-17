@@ -8498,7 +8498,10 @@ Rewrite this guidance as a coach speaking to this specific creator — one tight
  */
 
 
-const DEFAULT_MODEL = "claude-opus-4-8";
+// Sonnet 4.6 is the sweet spot for HOW-text refinement: high quality, ~5x cheaper than Opus,
+// and fast enough to feel responsive when running across ~8 roadmap steps in parallel.
+// Swap to claude-opus-4-8 for absolute top quality, or claude-haiku-4-5 for adaptive questions.
+const DEFAULT_MODEL = "claude-sonnet-4-6";
 const FAST_MODEL = "claude-haiku-4-5";
 
 interface AnthropicOptions {
@@ -8861,7 +8864,17 @@ function App() {
   const [roadmap, setRoadmap] = useState<Roadmap | null>(null);
 
   // ── AI layer ──
-  const [aiKey, setAiKey] = useState<string>("");
+  // Persist key in localStorage so testing across refreshes doesn't require re-paste.
+  // The key never leaves the browser tab; we call the Anthropic API directly with it.
+  const [aiKey, setAiKey] = useState<string>(() => {
+    try { return localStorage.getItem("fg-aikey") || ""; } catch { return ""; }
+  });
+  useEffect(() => {
+    try {
+      if (aiKey) localStorage.setItem("fg-aikey", aiKey);
+      else localStorage.removeItem("fg-aikey");
+    } catch {}
+  }, [aiKey]);
   const [showConnect, setShowConnect] = useState(false);
   const [enhancing, setEnhancing] = useState(false);
   const [adaptiveQueue, setAdaptiveQueue] = useState<AdaptiveQuestion[]>([]);
@@ -9147,8 +9160,8 @@ function ConnectAI({ current, onClose, onSave }: any) {
           value={key} onChange={(e) => setKey(e.target.value)} autoFocus
         />
         <p className="fg-modal-note">
-          The key stays in this browser tab only (used for direct calls to the Anthropic API) and is
-          never stored or sent anywhere else. For production, route through a backend.
+          Uses Claude Sonnet 4.6 directly from your browser. The key is stored in this browser's local storage
+          only (so refresh doesn't lose it) and is sent solely to Anthropic. For production, route through a backend.
         </p>
         <div style={{ display: "flex", gap: 10, marginTop: 16, justifyContent: "flex-end" }}>
           {current && <button className="fg-btn-ghost" onClick={() => onSave("")}>Disconnect</button>}

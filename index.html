@@ -8478,6 +8478,7 @@ Rewrite this guidance as a coach speaking to this specific creator — one tight
 /**
  * AI client — calls Google Gemini directly from the browser.
  * Free tier: 15 req/min, 1M tokens/day. No server, no billing.
+ * Auto-retries on 503/429 and falls back between models.
  */
 
 
@@ -8486,9 +8487,22 @@ const SERVER_URL    = "";
 
 // Split to avoid GitHub secret scanner blocking the deploy.
 const GEMINI_KEY = ["AQ.Ab8RN6", "LhzvcUp2YPrm55yWvmCv", "Wj8ZTo857ztENOm", "FKoAQkobQ"].join("");
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${DEFAULT_MODEL}:generateContent`;
+const BASE       = "https://generativelanguage.googleapis.com/v1beta/models";
+const MODELS     = ["gemini-2.5-flash", "gemini-2.0-flash-lite", "gemini-2.0-flash"];
 
-/** Browser-direct Gemini call. Used automatically — no key input needed from users. */
+async function callGemini(model: string, body: any): Promise<Response> {
+  return fetch(`${BASE}/${model}:generateContent?key=${GEMINI_KEY}`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+    referrerPolicy: "no-referrer",
+    mode: "cors",
+  });
+}
+
+function sleep(ms: number) { return new Promise(r => setTimeout(r, ms)); }
+
+/** Browser-direct Gemini call with retry + model fallback. */
 function createGeminiComplete(): LlmComplete {
   return async ({ system, prompt, maxTokens }) => {
     const body: any = {
@@ -8497,29 +8511,35 @@ function createGeminiComplete(): LlmComplete {
     };
     if (system) body.systemInstruction = { parts: [{ text: system }] };
 
-    const res = await fetch(`${GEMINI_URL}?key=${GEMINI_KEY}`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(body),
-      referrerPolicy: "no-referrer",
-      mode: "cors",
-    });
-    if (!res.ok) {
-      const detail = await res.text().catch(() => "");
-      throw new Error(`Gemini ${res.status}: ${detail.slice(0, 200)}`);
+    let lastErr = "";
+    for (const model of MODELS) {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const res = await callGemini(model, body);
+        if (res.ok) {
+          const data = await res.json();
+          return (data.candidates ?? [])
+            .flatMap((c: any) => c.content?.parts ?? [])
+            .map((p: any) => p.text ?? "")
+            .join("");
+        }
+        const code = res.status;
+        lastErr = await res.text().catch(() => "");
+        // Retry on overload/rate-limit, try next model on other errors
+        if (code === 503 || code === 429) {
+          await sleep(2000 * (attempt + 1));
+          continue;
+        }
+        break; // non-retryable error for this model, try next
+      }
     }
-    const data = await res.json();
-    return (data.candidates ?? [])
-      .flatMap((c: any) => c.content?.parts ?? [])
-      .map((p: any) => p.text ?? "")
-      .join("");
+    throw new Error(`Gemini error: ${lastErr.slice(0, 200)}`);
   };
 }
 
-// kept so App.tsx imports don't break — unused in practice
+// Compatibility stubs
 function createProxyComplete(): LlmComplete { return createGeminiComplete(); }
 function createBrowserAnthropic(): LlmComplete { return createGeminiComplete(); }
-async function pingServer(): Promise<void> { /* no server */ }
+async function pingServer(): Promise<void> {}
 
 
 /* ===== src/engine/engine.ts ===== */

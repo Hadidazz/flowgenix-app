@@ -8501,6 +8501,8 @@ function createGeminiComplete(): LlmComplete {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(body),
+      referrerPolicy: "no-referrer",
+      mode: "cors",
     });
     if (!res.ok) {
       const detail = await res.text().catch(() => "");

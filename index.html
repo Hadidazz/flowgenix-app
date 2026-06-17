@@ -8407,23 +8407,15 @@ class LlmAgentRuntime implements AgentRuntime {
   constructor(private complete: LlmComplete, private fallback = new DeterministicAgentRuntime()) {}
 
   private async tryJson<T>(prompt: string, max = 500): Promise<T | null> {
-    try {
-      const raw = (await this.complete({ system: SYSTEM, prompt, maxTokens: max })).trim();
-      const start = raw.indexOf("{");
-      const end = raw.lastIndexOf("}");
-      if (start < 0 || end < 0) return null;
-      return JSON.parse(raw.slice(start, end + 1)) as T;
-    } catch {
-      return null;
-    }
+    const raw = (await this.complete({ system: SYSTEM, prompt, maxTokens: max })).trim();
+    const start = raw.indexOf("{");
+    const end = raw.lastIndexOf("}");
+    if (start < 0 || end < 0) return null;
+    try { return JSON.parse(raw.slice(start, end + 1)) as T; } catch { return null; }
   }
   private async tryText(prompt: string, fallback: string, max = 400): Promise<string> {
-    try {
-      const out = (await this.complete({ system: SYSTEM, prompt, maxTokens: max })).trim();
-      return out.length > 2 ? out : fallback;
-    } catch {
-      return fallback;
-    }
+    const out = (await this.complete({ system: SYSTEM, prompt, maxTokens: max })).trim();
+    return out.length > 2 ? out : fallback;
   }
 
   async generateAdaptiveQuestions(state: UserState): Promise<AdaptiveQuestion[]> {
@@ -8542,7 +8534,7 @@ function createBrowserAnthropic(opts: AnthropicOptions): LlmComplete {
   };
 }
 
-/** Call a local proxy that injects the key server-side (tools/ai_server.py). */
+/** Call the FlowGenix AI server (tools/ai_server.py, deployed on Railway). */
 function createProxyComplete(endpoint = "http://127.0.0.1:5181/complete", model = DEFAULT_MODEL): LlmComplete {
   return async ({ system, prompt, maxTokens }) => {
     const res = await fetch(endpoint, {
@@ -8550,10 +8542,19 @@ function createProxyComplete(endpoint = "http://127.0.0.1:5181/complete", model 
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ system, prompt, maxTokens: maxTokens ?? 600, model }),
     });
-    if (!res.ok) throw new Error(`proxy ${res.status}`);
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error ?? `Server error ${res.status}`);
+    if (data.error) throw new Error(data.error);
     return data.text ?? "";
   };
+}
+
+/** Ping the server health endpoint. Throws if unreachable or misconfigured. */
+async function pingServer(serverUrl: string): Promise<void> {
+  const res = await fetch(`${serverUrl}/health`, { signal: AbortSignal.timeout(8000) });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(`Server returned ${res.status}`);
+  if (!data.key) throw new Error("Server is running but has no API key set. Add GEMINI_API_KEY in Railway → Variables.");
 }
 
 
@@ -8923,11 +8924,12 @@ function App() {
       if (runtime.live) {
         setEnhancing(true);
         try {
+          // Ping first so we get a clear error if the server is down or misconfigured
+          if (SERVER_URL) await pingServer(SERVER_URL);
           const enhanced = await enhanceRoadmap(base, finalState, runtime);
           setRoadmap(enhanced);
         } catch (err: any) {
-          const msg = err?.message ?? String(err);
-          setAiError(msg);
+          setAiError(err?.message ?? String(err));
         }
         setEnhancing(false);
       }
@@ -9138,7 +9140,7 @@ function TopBar({ onHome, onExplore, layer, aiOn, onConnect, theme, onTheme, vie
       </nav>
       <div className="fg-top-right">
         {layer && <span className={`fg-layer fg-layer-${layer}`}>{layerName[layer] ?? layer}</span>}
-        <button className={`fg-ai-btn ${aiOn ? "on" : ""}`} onClick={onConnect} title="Connect Claude for live AI">
+        <button className={`fg-ai-btn ${aiOn ? "on" : ""}`} onClick={onConnect} title="AI settings">
           <span className="fg-ai-spark">✦</span><span className="fg-ai-text">{aiOn ? "AI on" : "Connect AI"}</span>
         </button>
         <button className="fg-theme-btn" onClick={onTheme} title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}>
@@ -9157,25 +9159,23 @@ function ConnectAI({ current, onClose, onSave }: any) {
       <div className="fg-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 480 }}>
         <button className="fg-modal-x" onClick={onClose}>×</button>
         <span className="fg-tool-cat" style={{ color: "var(--purple)", background: "var(--purple-soft)" }}>✦ Live AI</span>
-        <h3 className="fg-modal-h">Turn on the AI co-pilot</h3>
+        <h3 className="fg-modal-h">AI settings</h3>
         <p className="fg-modal-text">
-          AI enhancement runs automatically via the FlowGenix server — you don't need your own key.
-          Paste one here only if you want to use your personal Anthropic account instead (useful for
-          heavy usage or testing specific models).
+          AI enhancement runs automatically — no setup needed. The roadmap is personalised for your
+          exact niche, platform, and goal after every quiz.
         </p>
-        <div className="fg-modal-label">Anthropic API key</div>
-        <input
-          className="fg-input" type="password" placeholder="sk-ant-…"
-          value={key} onChange={(e) => setKey(e.target.value)} autoFocus
-        />
         <p className="fg-modal-note">
-          Uses Claude Sonnet directly from your browser. The key is stored in this browser's local storage
-          only (so refresh doesn't lose it) and is sent solely to Anthropic. If it fails you'll see the exact error — free accounts with no credits will show a 401 or 403.
+          Advanced: paste your own API key below to override the built-in AI with your personal account.
         </p>
+        <div className="fg-modal-label">Personal API key (optional)</div>
+        <input
+          className="fg-input" type="password" placeholder="sk-ant-… or AIza…"
+          value={key} onChange={(e) => setKey(e.target.value)}
+        />
         <div style={{ display: "flex", gap: 10, marginTop: 16, justifyContent: "flex-end" }}>
-          {current && <button className="fg-btn-ghost" onClick={() => onSave("")}>Disconnect</button>}
+          {current && <button className="fg-btn-ghost" onClick={() => onSave("")}>Remove key</button>}
           <button className="fg-btn-primary" disabled={!key.trim()} onClick={() => onSave(key.trim())}>
-            {current ? "Update key" : "Connect Claude"}
+            {current ? "Update key" : "Save key"}
           </button>
         </div>
       </div>
@@ -9721,7 +9721,7 @@ function AdaptiveStep({ q, step, total, loading, aiOn, onAnswer }: any) {
         <div className="fg-quiz-main">
           <div className="fg-q-card" style={{ textAlign: "center" }}>
             <div className="fg-spin" style={{ margin: "20px auto" }} />
-            <p className="fg-q-hint">{aiOn ? "Claude is reading your answers to ask the one question that matters most…" : "Tuning one last question to your answers…"}</p>
+            <p className="fg-q-hint">Tuning one last question to your answers…</p>
           </div>
         </div>
       </section>
@@ -9827,7 +9827,7 @@ function RoadmapView({ roadmap, onRestart, onFeedback, enhancing, aiOn, aiError 
       </div>
 
       {enhancing && (
-        <div className="fg-enhancing"><span className="fg-spin-sm" /> Claude is personalising your roadmap…</div>
+        <div className="fg-enhancing"><span className="fg-spin-sm" /> Personalising your roadmap…</div>
       )}
       {aiError && (
         <div className="fg-ai-error">
@@ -9863,7 +9863,7 @@ function RoadmapView({ roadmap, onRestart, onFeedback, enhancing, aiOn, aiError 
         ))}
       </div>
 
-      <div className="fg-rm-foot-note">{aiOn ? "✦ Steps with the ✦ mark were rewritten by Claude for your exact case." : "Connect AI (top-right) to have Claude rewrite every step for your exact niche & goal."}</div>
+      <div className="fg-rm-foot-note">{aiOn ? "✦ Steps marked ✦ were personalised for your exact niche and goal." : ""}</div>
 
       <div className="fg-rm-foot">
         <button className="fg-btn-ghost" onClick={onRestart}>↻ Draw a new map</button>
@@ -9879,7 +9879,7 @@ function Tag({ k, v }: any) {
 function BriefCard({ brief, ai }: any) {
   return (
     <div className="fg-brief">
-      <div className="fg-brief-h">{ai ? "✦ Your game plan — written by Claude" : "✦ Your game plan"}</div>
+      <div className="fg-brief-h">✦ Your game plan</div>
       <div className="fg-brief-row"><span className="fg-brief-k">What you're doing</span><span className="fg-brief-v">{brief.play}</span></div>
       <div className="fg-brief-row"><span className="fg-brief-k">Where to focus</span><span className="fg-brief-v">{brief.nail}</span></div>
       <div className="fg-brief-row"><span className="fg-brief-k">Watch out for</span><span className="fg-brief-v">{brief.risk}</span></div>

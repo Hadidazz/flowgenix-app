@@ -1,33 +1,33 @@
 #!/usr/bin/env python3
 """
-FlowGenix AI Server — production proxy.
+FlowGenix AI Server — uses Google Gemini (free tier).
 
-Holds the Anthropic API key server-side. The browser calls this server;
-users never see or need a key. Deploy to Railway (free tier works fine).
+FREE: Get a key in 2 minutes at https://aistudio.google.com → "Get API key"
+No credit card. No billing. 15 requests/min, 1M tokens/day free.
 
 Local run (PowerShell):
-    $env:ANTHROPIC_API_KEY = "sk-ant-..."
+    $env:GEMINI_API_KEY = "AIza..."
     py -3 tools/ai_server.py
 
-Railway deploy: push to GitHub, connect repo in Railway, set
-ANTHROPIC_API_KEY in Railway's environment variables panel. Done.
+Railway deploy: push to GitHub, connect repo in Railway dashboard,
+add GEMINI_API_KEY as an environment variable. Done — all users get AI free.
 """
 import json, os, sys, time, urllib.request, urllib.error, http.server, socketserver
 from collections import defaultdict
 from threading import Lock
 
-KEY          = os.environ.get("ANTHROPIC_API_KEY", "")
-MODEL        = "claude-sonnet-4-5"
-PORT         = int(os.environ.get("PORT", 5181))
-# On Railway / Render the HOST env is not set, but we need 0.0.0.0 to accept traffic.
-# Locally we bind to 127.0.0.1 only.
-HOST         = "0.0.0.0" if os.environ.get("RAILWAY_ENVIRONMENT") or os.environ.get("RENDER") else "127.0.0.1"
+KEY    = os.environ.get("GEMINI_API_KEY", "")
+MODEL  = "gemini-1.5-flash"
+PORT   = int(os.environ.get("PORT", 5181))
+HOST   = "0.0.0.0" if (os.environ.get("RAILWAY_ENVIRONMENT") or os.environ.get("RENDER")) else "127.0.0.1"
 
-# ── Rate limiting: 20 requests / IP / 60 s ───────────────────────────────────
-_rate: dict  = defaultdict(list)
-_lock        = Lock()
-RATE_MAX     = 20
-RATE_WINDOW  = 60   # seconds
+GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent"
+
+# ── Rate limiting: 12 requests / IP / 60 s (stay inside Gemini free tier) ────
+_rate: dict = defaultdict(list)
+_lock       = Lock()
+RATE_MAX    = 12
+RATE_WINDOW = 60
 
 def allowed(ip: str) -> bool:
     now = time.time()
@@ -42,25 +42,20 @@ def allowed(ip: str) -> bool:
 
 class Handler(http.server.BaseHTTPRequestHandler):
 
-    # ── CORS headers (required: browser calls from a different origin) ────────
     def _cors(self):
         self.send_header("Access-Control-Allow-Origin",  "*")
         self.send_header("Access-Control-Allow-Headers", "content-type")
         self.send_header("Access-Control-Allow-Methods", "POST, OPTIONS")
 
     def do_OPTIONS(self):
-        self.send_response(204)
-        self._cors()
-        self.end_headers()
+        self.send_response(204); self._cors(); self.end_headers()
 
-    # ── Health check — Railway pings this to confirm the server is alive ──────
     def do_GET(self):
         if self.path in ("/", "/health"):
             self._json(200, {"ok": True, "model": MODEL, "key": bool(KEY)})
         else:
             self.send_response(404); self.end_headers()
 
-    # ── Main proxy endpoint ───────────────────────────────────────────────────
     def do_POST(self):
         if self.path != "/complete":
             self.send_response(404); self.end_headers(); return
@@ -68,51 +63,55 @@ class Handler(http.server.BaseHTTPRequestHandler):
         ip = self.client_address[0]
 
         if not KEY:
-            self._err(500, "Server has no API key configured — set ANTHROPIC_API_KEY.")
-            return
+            self._err(500, "Server has no GEMINI_API_KEY configured."); return
 
         if not allowed(ip):
-            self._err(429, "Rate limit: max 20 requests per minute per IP.")
-            return
+            self._err(429, "Rate limit: 12 requests per minute."); return
 
         try:
             n    = int(self.headers.get("Content-Length", 0))
             body = json.loads(self.rfile.read(n) or b"{}")
         except Exception:
-            self._err(400, "Invalid JSON body."); return
+            self._err(400, "Invalid JSON."); return
 
-        payload = json.dumps({
-            "model":      body.get("model", MODEL),
-            "max_tokens": min(int(body.get("maxTokens", 600)), 1000),
-            "system":     body.get("system", ""),
-            "messages":   [{"role": "user", "content": body.get("prompt", "")}],
-        }).encode()
+        system = body.get("system", "")
+        prompt = body.get("prompt", "")
+        max_tokens = min(int(body.get("maxTokens", 600)), 1000)
+
+        # Gemini API format: system instruction + user turn
+        gemini_payload = json.dumps({
+            "system_instruction": {"parts": [{"text": system}]} if system else None,
+            "contents": [{"role": "user", "parts": [{"text": prompt}]}],
+            "generationConfig": {"maxOutputTokens": max_tokens, "temperature": 0.7},
+        }, default=lambda x: None).encode()
+
+        # Remove null system_instruction if not set
+        payload_obj = json.loads(gemini_payload)
+        if not payload_obj.get("system_instruction"):
+            payload_obj.pop("system_instruction", None)
+        gemini_payload = json.dumps(payload_obj).encode()
 
         req = urllib.request.Request(
-            "https://api.anthropic.com/v1/messages",
-            data    = payload,
-            headers = {
-                "content-type":      "application/json",
-                "x-api-key":         KEY,
-                "anthropic-version": "2023-06-01",
-            },
-            method = "POST",
+            f"{GEMINI_URL}?key={KEY}",
+            data    = gemini_payload,
+            headers = {"content-type": "application/json"},
+            method  = "POST",
         )
         try:
             with urllib.request.urlopen(req, timeout=60) as r:
                 data = json.loads(r.read())
-            text = "".join(
-                b.get("text", "") for b in data.get("content", [])
-                if b.get("type") == "text"
-            )
-            self._json(200, {"text": text})
+            # Extract text from Gemini response
+            text = ""
+            for candidate in data.get("candidates", []):
+                for part in candidate.get("content", {}).get("parts", []):
+                    text += part.get("text", "")
+            self._json(200, {"text": text.strip()})
         except urllib.error.HTTPError as e:
             detail = e.read().decode("utf-8", errors="replace")[:400]
-            self._err(e.code, f"Anthropic: {detail}")
+            self._err(e.code, f"Gemini API error: {detail}")
         except Exception as ex:
             self._err(502, str(ex))
 
-    # ── Helpers ───────────────────────────────────────────────────────────────
     def _json(self, code: int, obj: dict):
         body = json.dumps(obj).encode()
         self.send_response(code)
@@ -131,10 +130,11 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     if not KEY:
-        print("WARNING: ANTHROPIC_API_KEY is not set — /complete will return 500.", file=sys.stderr)
+        print("ERROR: GEMINI_API_KEY not set.", file=sys.stderr)
+        print("Get a free key at https://aistudio.google.com → Get API key")
     socketserver.TCPServer.allow_reuse_address = True
     with socketserver.TCPServer((HOST, PORT), Handler) as srv:
         print(f"FlowGenix AI server  {HOST}:{PORT}")
-        print(f"Model : {MODEL}")
-        print(f"Key   : {'SET' if KEY else 'NOT SET — set ANTHROPIC_API_KEY'}")
+        print(f"Model : {MODEL}  (Google Gemini — free tier)")
+        print(f"Key   : {'SET' if KEY else 'NOT SET'}")
         srv.serve_forever()

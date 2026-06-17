@@ -19,7 +19,7 @@ from threading import Lock
 KEY    = os.environ.get("GEMINI_API_KEY", "")
 MODEL  = "gemini-1.5-flash"
 PORT   = int(os.environ.get("PORT", 5181))
-HOST   = "0.0.0.0" if (os.environ.get("RAILWAY_ENVIRONMENT") or os.environ.get("RENDER")) else "127.0.0.1"
+HOST   = "0.0.0.0"  # must bind to all interfaces on Railway/Render so external traffic reaches it
 
 GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent"
 

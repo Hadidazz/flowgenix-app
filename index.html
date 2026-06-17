@@ -8486,23 +8486,23 @@ Rewrite this guidance as a coach speaking to this specific creator — one tight
 /**
  * Live AI client — connects the agent layer to a real Claude model.
  *
- * Two transports, both producing the same `LlmComplete` the agents consume:
- *   - createBrowserAnthropic(): calls the Anthropic Messages API directly from the browser
- *     using the `anthropic-dangerous-direct-browser-access` header. Zero backend — paste a
- *     key in the demo and live AI turns on. (The key lives only in memory on the page.)
- *   - createProxyComplete(): calls a local proxy (tools/ai_server.py) that holds the key
- *     server-side — use this when you don't want the key in the browser.
+ * Two transports:
+ *   - createProxyComplete(): calls tools/ai_server.py (or its deployed Railway URL).
+ *     The server holds the API key — users need nothing. This is the default.
+ *   - createBrowserAnthropic(): browser-direct fallback for power users who paste their own key.
  *
- * Default model: claude-opus-4-8 (most capable). Swap to claude-sonnet-4-6 / claude-haiku-4-5
- * for faster, cheaper turns (good for the per-question adaptive agent).
+ * SERVER_URL: set this to your deployed Railway URL after deploy.
+ * Leave it empty to disable server-side AI (falls back to deterministic engine).
  */
 
 
-// Sonnet 4.6 is the sweet spot for HOW-text refinement: high quality, ~5x cheaper than Opus,
-// and fast enough to feel responsive when running across ~8 roadmap steps in parallel.
-// Swap to claude-opus-4-8 for absolute top quality, or claude-haiku-4-5 for adaptive questions.
 const DEFAULT_MODEL = "claude-sonnet-4-5";
-const FAST_MODEL = "claude-haiku-4-5-20251001";
+const FAST_MODEL    = "claude-haiku-4-5-20251001";
+
+// ── SET THIS after you deploy the server to Railway ──────────────────────────
+// Example: "https://flowgenix-ai-production.up.railway.app"
+// Leave empty ("") to disable server AI (app falls back to deterministic output).
+const SERVER_URL = "";
 
 interface AnthropicOptions {
   apiKey: string;
@@ -8888,11 +8888,15 @@ function App() {
     document.documentElement.setAttribute("data-theme", theme);
   }, [theme]);
 
-  const runtime = useMemo(
-    () => (aiKey ? new LlmAgentRuntime(createBrowserAnthropic({ apiKey: aiKey, model: DEFAULT_MODEL })) : new DeterministicAgentRuntime()),
-    [aiKey],
-  );
-  const aiOn = !!aiKey;
+  const runtime = useMemo(() => {
+    // Priority 1: user pasted their own key (power-user override)
+    if (aiKey) return new LlmAgentRuntime(createBrowserAnthropic({ apiKey: aiKey, model: DEFAULT_MODEL }));
+    // Priority 2: deployed server holds the key — users need nothing
+    if (SERVER_URL) return new LlmAgentRuntime(createProxyComplete(`${SERVER_URL}/complete`));
+    // Priority 3: no AI available — deterministic engine only
+    return new DeterministicAgentRuntime();
+  }, [aiKey]);
+  const aiOn = runtime.live;
 
   const current: Question | null = useMemo(
     () => (view === "quiz" ? pickNextQuestion(state, answered) : null),
@@ -9155,9 +9159,9 @@ function ConnectAI({ current, onClose, onSave }: any) {
         <span className="fg-tool-cat" style={{ color: "var(--purple)", background: "var(--purple-soft)" }}>✦ Live AI</span>
         <h3 className="fg-modal-h">Turn on the AI co-pilot</h3>
         <p className="fg-modal-text">
-          With a key connected, Claude writes a bespoke question for your exact case, rewrites every
-          step into niche-specific coaching, and sharpens the strategy brief. Without it, FlowGenix
-          still runs fully on its deterministic engine.
+          AI enhancement runs automatically via the FlowGenix server — you don't need your own key.
+          Paste one here only if you want to use your personal Anthropic account instead (useful for
+          heavy usage or testing specific models).
         </p>
         <div className="fg-modal-label">Anthropic API key</div>
         <input

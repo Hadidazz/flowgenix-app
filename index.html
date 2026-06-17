@@ -8476,86 +8476,47 @@ Rewrite this guidance as a coach speaking to this specific creator — one tight
 
 /* ===== src/engine/aiClient.ts ===== */
 /**
- * Live AI client — connects the agent layer to a real Claude model.
- *
- * Two transports:
- *   - createProxyComplete(): calls tools/ai_server.py (or its deployed Railway URL).
- *     The server holds the API key — users need nothing. This is the default.
- *   - createBrowserAnthropic(): browser-direct fallback for power users who paste their own key.
- *
- * SERVER_URL: set this to your deployed Railway URL after deploy.
- * Leave it empty to disable server-side AI (falls back to deterministic engine).
+ * AI client — calls Google Gemini directly from the browser.
+ * Free tier: 15 req/min, 1M tokens/day. No server, no billing.
  */
 
 
-const DEFAULT_MODEL = "claude-sonnet-4-5";
-const FAST_MODEL    = "claude-haiku-4-5-20251001";
+const DEFAULT_MODEL = "gemini-1.5-flash";
+const SERVER_URL    = ""; // kept for type compatibility, unused
 
-// ── SET THIS after you deploy the server to Railway ──────────────────────────
-// Example: "https://flowgenix-ai-production.up.railway.app"
-// Leave empty ("") to disable server AI (app falls back to deterministic output).
-const SERVER_URL = "https://flowgenix-app-production.up.railway.app";
+const GEMINI_KEY = "AIzaAQ.Ab8RN6LhzvcUp2YPrm55yWvmCvWj8ZTo857ztENOmFKoAQkobQ";
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${DEFAULT_MODEL}:generateContent`;
 
-interface AnthropicOptions {
-  apiKey: string;
-  model?: string;
-  /** Endpoint override; defaults to the public API. */
-  baseUrl?: string;
-}
-
-/** Browser-direct Anthropic Messages call. Returns concatenated text blocks. */
-function createBrowserAnthropic(opts: AnthropicOptions): LlmComplete {
-  const model = opts.model ?? DEFAULT_MODEL;
-  const base = opts.baseUrl ?? "https://api.anthropic.com";
+/** Browser-direct Gemini call. Used automatically — no key input needed from users. */
+function createGeminiComplete(): LlmComplete {
   return async ({ system, prompt, maxTokens }) => {
-    const res = await fetch(`${base}/v1/messages`, {
+    const body: any = {
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig: { maxOutputTokens: maxTokens ?? 600, temperature: 0.7 },
+    };
+    if (system) body.systemInstruction = { parts: [{ text: system }] };
+
+    const res = await fetch(`${GEMINI_URL}?key=${GEMINI_KEY}`, {
       method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-api-key": opts.apiKey,
-        "anthropic-version": "2023-06-01",
-        "anthropic-dangerous-direct-browser-access": "true",
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: maxTokens ?? 600,
-        system,
-        messages: [{ role: "user", content: prompt }],
-      }),
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
     });
     if (!res.ok) {
       const detail = await res.text().catch(() => "");
-      throw new Error(`Anthropic ${res.status}: ${detail.slice(0, 200)}`);
+      throw new Error(`Gemini ${res.status}: ${detail.slice(0, 200)}`);
     }
     const data = await res.json();
-    return (data.content ?? [])
-      .map((b: { type: string; text?: string }) => (b.type === "text" ? b.text ?? "" : ""))
+    return (data.candidates ?? [])
+      .flatMap((c: any) => c.content?.parts ?? [])
+      .map((p: any) => p.text ?? "")
       .join("");
   };
 }
 
-/** Call the FlowGenix AI server (tools/ai_server.py, deployed on Railway). */
-function createProxyComplete(endpoint = "http://127.0.0.1:5181/complete", model = DEFAULT_MODEL): LlmComplete {
-  return async ({ system, prompt, maxTokens }) => {
-    const res = await fetch(endpoint, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ system, prompt, maxTokens: maxTokens ?? 600, model }),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error ?? `Server error ${res.status}`);
-    if (data.error) throw new Error(data.error);
-    return data.text ?? "";
-  };
-}
-
-/** Ping the server health endpoint. Throws if unreachable or misconfigured. */
-async function pingServer(serverUrl: string): Promise<void> {
-  const res = await fetch(`${serverUrl}/health`, { signal: AbortSignal.timeout(8000) });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(`Server returned ${res.status}`);
-  if (!data.key) throw new Error("Server is running but has no API key set. Add GEMINI_API_KEY in Railway → Variables.");
-}
+// kept so App.tsx imports don't break — unused in practice
+function createProxyComplete(): LlmComplete { return createGeminiComplete(); }
+function createBrowserAnthropic(): LlmComplete { return createGeminiComplete(); }
+async function pingServer(): Promise<void> { /* no server */ }
 
 
 /* ===== src/engine/engine.ts ===== */
@@ -8889,14 +8850,10 @@ function App() {
     document.documentElement.setAttribute("data-theme", theme);
   }, [theme]);
 
-  const runtime = useMemo(() => {
-    // Priority 1: user pasted their own key (power-user override)
-    if (aiKey) return new LlmAgentRuntime(createBrowserAnthropic({ apiKey: aiKey, model: DEFAULT_MODEL }));
-    // Priority 2: deployed server holds the key — users need nothing
-    if (SERVER_URL) return new LlmAgentRuntime(createProxyComplete(`${SERVER_URL}/complete`));
-    // Priority 3: no AI available — deterministic engine only
-    return new DeterministicAgentRuntime();
-  }, [aiKey]);
+  const runtime = useMemo(
+    () => new LlmAgentRuntime(createGeminiComplete()),
+    [],
+  );
   const aiOn = runtime.live;
 
   const current: Question | null = useMemo(
@@ -8924,8 +8881,6 @@ function App() {
       if (runtime.live) {
         setEnhancing(true);
         try {
-          // Ping first so we get a clear error if the server is down or misconfigured
-          if (SERVER_URL) await pingServer(SERVER_URL);
           const enhanced = await enhanceRoadmap(base, finalState, runtime);
           setRoadmap(enhanced);
         } catch (err: any) {

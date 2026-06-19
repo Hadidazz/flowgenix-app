@@ -15571,6 +15571,7 @@ function Home({ onStart, onExplore }: any) {
 
 function ExplorePage({ onStart }: any) {
   const [mod, setMod] = useState<"cc" | "mk">("cc");
+  const [query, setQuery] = useState("");
   return (
     <>
       <section className="fg-explore-hero">
@@ -15581,12 +15582,26 @@ function ExplorePage({ onStart }: any) {
           Or skip the browse — let FlowGenix pick the right ones for your goal.
         </p>
         <div style={{ display: "flex", gap: "8px", justifyContent: "center", marginBottom: "18px" }}>
-          <button className={`fg-field-chip ${mod === "cc" ? "live" : ""}`} style={{ cursor: "pointer", border: "none" }} onClick={() => setMod("cc")}>Content Creator</button>
-          <button className={`fg-field-chip ${mod === "mk" ? "live" : ""}`} style={{ cursor: "pointer", border: "none" }} onClick={() => setMod("mk")}>Marketing</button>
+          <button className={`fg-field-chip ${mod === "cc" ? "live" : ""}`} style={{ cursor: "pointer", border: "none" }} onClick={() => { setMod("cc"); setQuery(""); }}>Content Creator</button>
+          <button className={`fg-field-chip ${mod === "mk" ? "live" : ""}`} style={{ cursor: "pointer", border: "none" }} onClick={() => { setMod("mk"); setQuery(""); }}>Marketing</button>
         </div>
-        <button className="fg-btn-primary" onClick={onStart}>Get my personal roadmap →</button>
+        <div className="fg-search-wrap">
+          <span className="fg-search-icon" aria-hidden>⌕</span>
+          <input
+            className="fg-search-input"
+            type="search"
+            value={query}
+            onChange={(e: any) => setQuery(e.target.value)}
+            placeholder={mod === "cc" ? "Search 167 tools — name, category, or what it does…" : "Search 67 tools — try \"claude\", \"video\", or \"seo\"…"}
+            aria-label="Search tools"
+          />
+          {query && (
+            <button className="fg-search-clear" onClick={() => setQuery("")} aria-label="Clear search">×</button>
+          )}
+        </div>
+        <button className="fg-btn-primary" onClick={onStart} style={{ marginTop: "18px" }}>Get my personal roadmap →</button>
       </section>
-      {mod === "cc" ? <ToolShowcase /> : <MarketingToolShowcase />}
+      {mod === "cc" ? <ToolShowcase query={query} /> : <MarketingToolShowcase query={query} />}
     </>
   );
 }
@@ -15684,7 +15699,7 @@ function bucketFor(category: string): string {
   return "research";
 }
 
-function ToolShowcase() {
+function ToolShowcase({ query }: { query?: string }) {
   const tools = useMemo(uniqueTools, []);
   const [active, setActive] = useState<any | null>(null);
   const [filter, setFilter] = useState<string>("all");
@@ -15698,7 +15713,16 @@ function ToolShowcase() {
     return c;
   }, [tools]);
 
-  const shown = filter === "all" ? tools : tools.filter((t: any) => bucketFor(t.category) === filter);
+  const q = (query || "").trim().toLowerCase();
+  const baseShown = filter === "all" ? tools : tools.filter((t: any) => bucketFor(t.category) === filter);
+  const shown = q
+    ? (baseShown as any[]).filter((t) =>
+        t.name.toLowerCase().includes(q) ||
+        (t.category || "").toLowerCase().includes(q) ||
+        (t.exactTask || "").toLowerCase().includes(q) ||
+        (t.bestForNiche || "").toLowerCase().includes(q)
+      )
+    : baseShown;
 
   return (
     <section className="fg-tools" id="tools">
@@ -16611,37 +16635,90 @@ function MarketingStar({ data, answers, isOpen, isLast, onToggle }: any) {
   );
 }
 
-function MarketingToolShowcase() {
+// Capability buckets — what the tool DOES, not which marketing field it lives under.
+// Tools that span fields (Claude, ChatGPT, Perplexity, Gemini) land in one capability
+// bucket and carry per-specialty tags on the card so a marketer scanning a bucket
+// instantly sees "this LLM also serves email + brand + content."
+const MK_CAP_BUCKETS: { key: string; label: string; matches: RegExp }[] = [
+  { key: "llm",       label: "LLMs & general AI assistants", matches: /^(chatgpt|claude|gemini|perplexity)/i },
+  { key: "research",  label: "Research, insight & audience", matches: /(research|insight|audience|persona|trend|panel|spark|attest)/i },
+  { key: "seo",       label: "SEO, on-page & GEO optimization", matches: /(keyword|on-page|seo|geo|aeo|technical seo|schema|surfer|frase|clearscope|screaming frog)/i },
+  { key: "linkpr",    label: "Link building, outreach & PR",   matches: /(link|outreach|backlink|pr |digital pr|hunter)/i },
+  { key: "ads",       label: "Paid ads & campaign management", matches: /(campaign|bid|ad creative|paid|advantage\+|performance max|tiktok ads|google ads|meta ads)/i },
+  { key: "creative",  label: "Creative generation (image, video, design)", matches: /(image|video|design|midjourney|runway|canva|adobe|dalle|firefly|capcut|invideo|synthesia|heygen|veo|krea|flux|figma|leonardo|ideogram)/i },
+  { key: "email",     label: "Email & lifecycle platforms",    matches: /(klaviyo|mailchimp|hubspot|braze|customer\.io|sendgrid|email marketing|crm-based)/i },
+  { key: "social",    label: "Social scheduling & community",  matches: /(buffer|hootsuite|sprout|later|metricool|community management|social listening|scheduler)/i },
+  { key: "writing",   label: "Writing, copy & content production", matches: /(copywrit|writing|drafting|content (gen|production)|editing|grammarly|jasper|copy\.ai|writesonic|article)/i },
+  { key: "brand",     label: "Brand strategy, positioning & guidelines", matches: /(brand strategy|positioning|messaging|guidelines|documentation)/i },
+  { key: "analytics", label: "Analytics, attribution & dashboards", matches: /(analytic|attribution|tracking|tagging|dashboard|reporting|bi tool|funnel|ga4|triple whale|windsor|cometly)/i },
+  { key: "testing",   label: "Experimentation & optimization", matches: /(experiment|a-?b test|testing|optimization|optimiz|vwo|optimizely|kameleoon)/i },
+];
+const MK_FALLBACK_BUCKET = { key: "other", label: "Other AI tools", matches: /.*/ };
+
+function mkBucketFor(t: any) {
+  const hay = `${t.name} ${t.category}`;
+  for (const b of MK_CAP_BUCKETS) {
+    if (b.matches.test(hay)) return b.key;
+  }
+  return MK_FALLBACK_BUCKET.key;
+}
+
+const MK_SPEC_SHORT: Record<string, string> = {
+  seo: "SEO", perf: "Paid", email: "Email", social: "Social",
+  brand: "Brand", content: "Content", analytics: "Analytics", shared: "Cross-field",
+};
+
+function MarketingToolShowcase({ query }: { query: string }) {
   const [active, setActive] = useState<any | null>(null);
   if (!_MK) return null;
+
+  // Dedup by tool name, keep highest trust, but COLLECT every specialty the
+  // tool appears under so we can show cross-field tags on each card.
   const byName: Record<string, any> = {};
   for (const t of _MK.MARKETING_TOOL_PROFILES as any[]) {
     const cur = byName[t.name];
-    if (!cur || t.trustScore > cur.trustScore) byName[t.name] = t;
+    if (!cur) {
+      byName[t.name] = { ...t, specialties: new Set([t.specialty]) };
+    } else {
+      cur.specialties.add(t.specialty);
+      if (t.trustScore > cur.trustScore) Object.assign(cur, t, { specialties: cur.specialties });
+    }
   }
-  const uniq = Object.values(byName) as any[];
-  const SPEC: [string, string][] = [
-    ["seo", "SEO & AI Search"], ["perf", "Performance / Paid"], ["email", "Email & Lifecycle"],
-    ["social", "Social Media"], ["brand", "Brand & Creative"], ["content", "Content Marketing"],
-    ["analytics", "Analytics & Growth"], ["shared", "Shared (cross-stage)"],
-  ];
+  const all = (Object.values(byName) as any[]).map((t) => ({ ...t, specialties: Array.from(t.specialties) }));
+
+  const q = (query || "").trim().toLowerCase();
+  const filtered = q
+    ? all.filter((t) =>
+        t.name.toLowerCase().includes(q) ||
+        (t.category || "").toLowerCase().includes(q) ||
+        (t.exactTask || "").toLowerCase().includes(q) ||
+        (t.specialties || []).some((s: string) => (MK_SPEC_SHORT[s] || s).toLowerCase().includes(q))
+      )
+    : all;
+
   return (
     <section className="fg-tools" id="tools">
       <div className="fg-sec-eyebrow">Marketing tool universe</div>
-      <h2 className="fg-sec-h">{uniq.length} marketing AI tools, mapped to the work</h2>
-      <p className="fg-sec-sub">Grouped by specialty. Tap any tool for the full review, pricing, and a direct link.</p>
-      {SPEC.map(([key, label]) => {
-        const list = uniq.filter((t) => t.specialty === key).sort((a, b) => b.trustScore - a.trustScore || a.name.localeCompare(b.name));
+      <h2 className="fg-sec-h">{all.length} marketing AI tools, grouped by what they do</h2>
+      <p className="fg-sec-sub">A tool like Claude or ChatGPT serves many fields, so it appears once under its capability — with tags showing every marketing specialty it covers.</p>
+
+      {MK_CAP_BUCKETS.concat([MK_FALLBACK_BUCKET]).map((b) => {
+        const list = filtered.filter((t) => mkBucketFor(t) === b.key).sort((a, b) => b.trustScore - a.trustScore || a.name.localeCompare(b.name));
         if (!list.length) return null;
         return (
-          <div key={key}>
-            <div className="fg-sec-eyebrow" style={{ marginTop: "28px", textAlign: "left" }}>{label} <span style={{ opacity: 0.5 }}>· {list.length}</span></div>
+          <div key={b.key}>
+            <div className="fg-sec-eyebrow" style={{ marginTop: "28px", textAlign: "left" }}>{b.label} <span style={{ opacity: 0.5 }}>· {list.length}</span></div>
             <div className="fg-tool-grid">
               {list.map((t) => (
                 <button key={t.id} className="fg-tool-card" onClick={() => setActive(t)}>
                   <div className="fg-tool-top"><span className="fg-tool-cat">{t.category}</span><Stars score={t.trustScore} /></div>
                   <div className="fg-tool-name">{t.name}</div>
                   <div className="fg-tool-task">{t.exactTask}</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", margin: "6px 0 10px" }}>
+                    {(t.specialties || []).map((sp: string) => (
+                      <span key={sp} className="fg-rt-pill" style={{ fontSize: "10px", padding: "2px 7px" }}>{MK_SPEC_SHORT[sp] || sp}</span>
+                    ))}
+                  </div>
                   <div className="fg-tool-foot">
                     <span className="fg-tool-price">{t.startingPrice || "—"}</span>
                     <span className="fg-tool-region">{(t.region || "").split("(")[0]}</span>
@@ -16652,6 +16729,9 @@ function MarketingToolShowcase() {
           </div>
         );
       })}
+      {filtered.length === 0 && (
+        <p className="fg-sec-sub" style={{ textAlign: "center", padding: "40px 0" }}>No tools match "{query}". Try a different keyword.</p>
+      )}
       {active && <MarketingToolModal tool={active} onClose={() => setActive(null)} />}
     </section>
   );
@@ -17208,6 +17288,13 @@ b{font-weight:700;color:var(--text)}
 .fg-explore-hero{position:relative;max-width:900px;margin:0 auto;padding:60px 24px 30px;text-align:center}
 .fg-explore-h{font-size:clamp(28px,5vw,44px);font-weight:800;letter-spacing:-.03em;line-height:1.15;color:var(--text);margin:14px 0 16px}
 .fg-explore-p{color:var(--text-soft);font-size:16px;line-height:1.65;max-width:640px;margin:0 auto 28px}
+.fg-search-wrap{position:relative;max-width:520px;margin:0 auto 8px;display:flex;align-items:center}
+.fg-search-icon{position:absolute;left:16px;top:50%;transform:translateY(-50%);color:var(--text-soft);font-size:18px;pointer-events:none;opacity:.7}
+.fg-search-input{width:100%;background:var(--bg-card);border:1px solid var(--line);color:var(--text);font-family:inherit;font-size:15px;padding:13px 44px 13px 44px;border-radius:12px;outline:none;transition:all .15s}
+.fg-search-input::placeholder{color:var(--text-soft);opacity:.7}
+.fg-search-input:focus{border-color:var(--accent);background:var(--bg-elev);box-shadow:0 0 0 3px var(--accent-soft)}
+.fg-search-clear{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:transparent;border:none;color:var(--text-soft);font-size:22px;cursor:pointer;width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.fg-search-clear:hover{background:var(--line);color:var(--text)}
 
 /* ── Light-mode refinements (violet jewel-tone, no muddy gold) ───────────── */
 [data-theme="light"] .fg-btn-primary{background:linear-gradient(135deg,var(--accent),var(--purple));box-shadow:0 10px 26px rgba(107,75,224,.32),0 0 16px rgba(124,77,255,.20)}
@@ -17239,13 +17326,14 @@ window.FG = { assembleRoadmap, determineStages, pickNextQuestion, applyAnswer, d
 window.MK = MK;
 // smoke-render the Quiz + Roadmap component trees off-screen so we exercise those paths too
 var smoke = 'skip';
+function smokeMount(){var d=document.createElement('div');d.setAttribute('aria-hidden','true');d.style.cssText='position:absolute;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden;visibility:hidden;pointer-events:none';document.body.appendChild(d);return d;}
 try {
   var sampleState = {contentFamily:'video',specialty:'video.avatar',niches:['Business / entrepreneurship'],platforms:['YouTube'],purpose:'create',painSource:'save_time',aiFamiliarity:'beginner',nicheFamiliarity:'low',handoffNeed:'high',depth:'detailed',examples:true,budget:'free',riskTolerance:'safe',qualityVsSpeed:'quality',stackPrefs:['easy'],outputReqs:['commercial'],commercialUse:'high'};
   var rm = assembleRoadmap(sampleState, {});
-  var d1 = document.createElement('div'); document.body.appendChild(d1);
+  var d1 = smokeMount();
   ReactDOM.createRoot(d1).render(React.createElement(RoadmapView,{roadmap:rm,onRestart:function(){},onFeedback:function(){}}));
   var q = pickNextQuestion({}, new Set());
-  var d2 = document.createElement('div'); document.body.appendChild(d2);
+  var d2 = smokeMount();
   ReactDOM.createRoot(d2).render(React.createElement(Quiz,{state:{},answered:new Set(),current:q,onSubmit:function(){},onBack:function(){}}));
   setTimeout(function(){ d1.remove(); d2.remove(); }, 100);
   smoke = 'rendered roadmap('+rm.steps.length+' steps) + quiz';
@@ -17260,12 +17348,12 @@ try {
     aiComfort:'used_a_few', topicKnowledge:'basics', handhold:'some_guidance', depth:'detailed', examples:true,
     budget:'flexible', riskTolerance:'safe', qualityVsSpeed:'balanced', toolPreference:'familiar', usageContext:'client_work'};
   var mkStages = MK.determineStages(mkA);
-  var d3 = document.createElement('div'); document.body.appendChild(d3);
+  var d3 = smokeMount();
   ReactDOM.createRoot(d3).render(React.createElement(MarketingRoadmap,{answers:mkA,onRestart:function(){}}));
   var mkq = MK.nextQuestion({});
-  var d4 = document.createElement('div'); document.body.appendChild(d4);
+  var d4 = smokeMount();
   ReactDOM.createRoot(d4).render(React.createElement(MarketingQuiz,{current:mkq,answers:{},onSubmit:function(){},onBack:function(){},onEditChip:function(){}}));
-  var d5 = document.createElement('div'); document.body.appendChild(d5);
+  var d5 = smokeMount();
   ReactDOM.createRoot(d5).render(React.createElement(FieldPicker,{onCC:function(){},onMarketing:function(){},onHome:function(){}}));
   setTimeout(function(){ d3.remove(); d4.remove(); d5.remove(); }, 100);
   mksmoke = 'rendered mk-roadmap('+mkStages.length+' stages, first-q '+(mkq&&mkq.id)+') + picker';

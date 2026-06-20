@@ -15176,6 +15176,29 @@ function App() {
   const [adaptiveState, setAdaptiveState] = useState<UserState>({});
   const [adaptiveLoading, setAdaptiveLoading] = useState(false);
 
+  // ── Scroll-reveal observer: any element with [data-reveal] fades+rises in
+  //    when it enters the viewport. Re-arms on view change so newly mounted
+  //    sections animate too. ──
+  useEffect(() => {
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) {
+            e.target.classList.add("fg-in");
+            io.unobserve(e.target);
+          }
+        }
+      },
+      { threshold: 0.12, rootMargin: "0px 0px -8% 0px" }
+    );
+    const arm = () => {
+      document.querySelectorAll<HTMLElement>("[data-reveal]:not(.fg-in)").forEach((el) => io.observe(el));
+    };
+    arm();
+    const t = window.setTimeout(arm, 60);
+    return () => { window.clearTimeout(t); io.disconnect(); };
+  }, [view]);
+
   useEffect(() => {
     try { localStorage.setItem("fg-theme", theme); } catch {}
     document.documentElement.setAttribute("data-theme", theme);
@@ -15382,19 +15405,19 @@ function CosmicBackground() {
     let seed = 137;
     const rand = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
     const starsOut: { x: number; y: number; r: number; d: number; o: number; dur: number }[] = [];
-    for (let i = 0; i < 140; i++) {
+    for (let i = 0; i < 90; i++) {
       starsOut.push({
         x: rand() * 100,
         y: rand() * 100,
-        r: 0.4 + rand() * 2.0,
-        d: rand() * 6,
-        o: 0.2 + rand() * 0.7,
-        dur: 2.5 + rand() * 4,
+        r: 0.3 + rand() * 1.4,
+        d: rand() * 8,
+        o: 0.15 + rand() * 0.55,
+        dur: 3 + rand() * 5,
       });
     }
     // A few shooting stars at staggered intervals / positions.
     const shootOut: { top: number; left: number; delay: number; dur: number }[] = [];
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 2; i++) {
       shootOut.push({
         top: 5 + rand() * 45,
         left: 30 + rand() * 60,
@@ -15406,11 +15429,8 @@ function CosmicBackground() {
   }, []);
   return (
     <div className="fg-cosmos" aria-hidden>
-      {/* drifting nebula clouds */}
-      <div className="fg-neb fg-neb-1" />
-      <div className="fg-neb fg-neb-2" />
-      <div className="fg-neb fg-neb-3" />
-      {/* twinkling starfield */}
+      {/* Pure black void with sparse white pinpoints — matches image 2's deep space.
+         No drifting clouds, no color washes. Motion lives on text/sections, not the bg. */}
       <svg className="fg-cosmos-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
         {stars.map((s, i) => (
           <circle
@@ -15536,21 +15556,21 @@ function Home({ onStart, onExplore }: any) {
       <section className="fg-hero">
         <div className="fg-hero-glow" />
         <ConstellationHero />
-        <div className="fg-hero-content">
-          <span className="fg-eyebrow">The guided way into AI</span>
-          <h1 className="fg-hero-h">
-            You know your work.<br />
+        <div className="fg-hero-content" data-reveal-group>
+          <span className="fg-eyebrow" data-reveal>The guided way into AI</span>
+          <h1 className="fg-hero-h" data-reveal="glow">
+            <span className="fg-shimmer-text">You know your work.</span><br />
             We'll show you <span className="fg-grad">where AI fits in.</span>
           </h1>
-          <p className="fg-hero-p">
+          <p className="fg-hero-p" data-reveal>
             The world has 10,000+ AI tools and no map. Answer a few short questions about what
             you do — we'll draw the path: the tools to use, in what order, and how to begin each one.
           </p>
-          <div className="fg-hero-cta">
+          <div className="fg-hero-cta" data-reveal>
             <button className="fg-btn-primary" onClick={onStart}>Light my path →</button>
             <button className="fg-btn-ghost" onClick={onExplore}>Explore the tool universe ↗</button>
           </div>
-          <div className="fg-hero-pills">
+          <div className="fg-hero-pills" data-reveal>
             {[
               "No sign-up", "No jargon", "Five minutes", "Made for your goal",
             ].map((t) => (
@@ -15562,13 +15582,13 @@ function Home({ onStart, onExplore }: any) {
 
       <HowItWorks />
 
-      <section className="fg-belief">
-        <div className="fg-belief-inner">
-          <div className="fg-sec-eyebrow">Why it works</div>
-          <h2 className="fg-belief-h">
+      <section className="fg-belief" data-reveal>
+        <div className="fg-belief-inner" data-reveal-group>
+          <div className="fg-sec-eyebrow" data-reveal>Why it works</div>
+          <h2 className="fg-belief-h" data-reveal="glow">
             Search creates paralysis. <span className="fg-grad">Guidance creates momentum.</span>
           </h2>
-          <p className="fg-belief-p">
+          <p className="fg-belief-p" data-reveal>
             The problem with AI was never access — it's knowing what to do, in what order, and why.
             FlowGenix replaces the blank-page moment with a clear first step, then the next, then the
             next. No tool list to scroll. No tutorial to sit through. Just your path, lit up.
@@ -15578,11 +15598,11 @@ function Home({ onStart, onExplore }: any) {
 
       <FieldsStrip />
 
-      <section className="fg-cta-band">
-        <div className="fg-cta-inner">
-          <h2 className="fg-cta-h">Your map is waiting to be drawn.</h2>
-          <p className="fg-cta-p">A clear first step is the whole game.</p>
-          <button className="fg-btn-primary fg-btn-xl" onClick={onStart}>Light my path →</button>
+      <section className="fg-cta-band" data-reveal>
+        <div className="fg-cta-inner" data-reveal-group>
+          <h2 className="fg-cta-h" data-reveal="glow">Your map is waiting to be drawn.</h2>
+          <p className="fg-cta-p" data-reveal>A clear first step is the whole game.</p>
+          <button className="fg-btn-primary fg-btn-xl" onClick={onStart} data-reveal>Light my path →</button>
         </div>
       </section>
     </>
@@ -15660,12 +15680,12 @@ function HowItWorks() {
     { n: "03", h: "Start using AI today, not someday", b: "Every step tells you what to do, why this tool was chosen, and how to begin — with a copy-paste prompt tailored to your niche, your audience, and your platform." },
   ];
   return (
-    <section className="fg-how" id="how">
-      <div className="fg-sec-eyebrow">How it works</div>
-      <h2 className="fg-sec-h">From confusion to a clear path — in minutes</h2>
-      <div className="fg-how-grid">
+    <section className="fg-how" id="how" data-reveal>
+      <div className="fg-sec-eyebrow" data-reveal>How it works</div>
+      <h2 className="fg-sec-h" data-reveal="glow">From confusion to a clear path — in minutes</h2>
+      <div className="fg-how-grid" data-reveal-group>
         {steps.map((s) => (
-          <div className="fg-how-card" key={s.n}>
+          <div className="fg-how-card" key={s.n} data-reveal>
             <div className="fg-how-num">{s.n}</div>
             <h3 className="fg-how-h">{s.h}</h3>
             <p className="fg-how-b">{s.b}</p>
@@ -15682,16 +15702,16 @@ function FieldsStrip() {
     "IT / Engineering", "HR", "Education", "Management", "Finance",
   ];
   return (
-    <section className="fg-fields">
-      <div className="fg-sec-eyebrow">Made for every kind of work</div>
-      <h2 className="fg-sec-h">One engine. Every profession.</h2>
-      <p className="fg-sec-sub">
+    <section className="fg-fields" data-reveal>
+      <div className="fg-sec-eyebrow" data-reveal>Made for every kind of work</div>
+      <h2 className="fg-sec-h" data-reveal="glow">One engine. Every profession.</h2>
+      <p className="fg-sec-sub" data-reveal>
         Content creation is just the first map. The same engine is coming for the work a doctor does,
         a lawyer does, a teacher does, a designer does — every field, mapped with the same care.
       </p>
-      <div className="fg-fields-row">
+      <div className="fg-fields-row" data-reveal-group>
         {fields.map((f, i) => (
-          <span key={f} className={`fg-field-chip ${i <= 1 ? "live" : ""}`}>
+          <span key={f} className={`fg-field-chip ${i <= 1 ? "live" : ""}`} data-reveal>
             {i <= 1 ? "✦ " : ""}{f}{i <= 1 ? " — live now" : ""}
           </span>
         ))}
@@ -16854,44 +16874,46 @@ function Styles() {
 const CSS = `
 /* ── Theme tokens ─────────────────────────────────────────────────────────── */
 :root, [data-theme="dark"]{
-  /* Visual identity: spiral-galaxy. Deep void black with warm core + blue arms.
-     Background is near-pure black (subtle navy cast) so the cosmos layers shine. */
-  --bg:#02030A;
-  --bg-elev:rgba(10,14,28,.72);
-  --bg-card:rgba(14,18,36,.74);
-  --text:#EEF1FA;
-  --text-soft:#B0B7CC;
-  --text-faint:#737A92;
-  --line:rgba(150,170,220,.16);
-  --line-strong:rgba(170,190,230,.34);
-  --accent:#5B9BFF;
-  --accent-soft:rgba(91,155,255,.16);
+  /* Visual identity — designed from image 2 (the spiral galaxy):
+       • Background = jet black void. 99% of the image is black.
+       • Accent palette = colors that actually appear IN the galaxy:
+         - warm gold core (#FFC15E / #FFE6B0 hot center)
+         - blue spiral arms (#4A7FE0)
+         - violet inner ring (#8B5BD4)
+         - dusty red-purple hint (#B8527C, used sparingly)
+         - white starlight (#F2F4FA)
+     No wide color gradients on the background — the void stays black, color appears
+     ONLY on surfaces, text, and accents. Motion lives on text/section reveals. */
+  --bg:#000000;
+  --bg-elev:rgba(8,10,18,.86);
+  --bg-card:rgba(12,14,24,.86);
+  --bg-card-solid:#0A0C16;
+  --text:#F2F4FA;
+  --text-soft:#A8AEC2;
+  --text-faint:#6A6F84;
+  --line:rgba(160,170,200,.13);
+  --line-strong:rgba(180,190,220,.28);
+  --accent:#4A7FE0;           /* spiral-arm blue */
+  --accent-soft:rgba(74,127,224,.14);
   --teal:#3EC1A7;
-  --teal-soft:rgba(62,193,167,.16);
+  --teal-soft:rgba(62,193,167,.14);
   --green:#4FA86A;
-  --green-soft:rgba(79,168,106,.18);
-  --amber:#FFB347;
-  --amber-soft:rgba(255,179,71,.18);
-  --red:#E07B7B;
-  --red-soft:rgba(224,123,123,.18);
-  --purple:#A98CFF;
-  --purple-soft:rgba(169,140,255,.20);
-  --purple-glow:#C9B3FF;
-  --gold:#FFD27A;
-  --gold-soft:rgba(255,210,122,.22);
-  --star:#E0E5F2;
-  --star-dim:#7D8398;
-  --star-bright:#FFE3A8;
-  --brand:#F2F4FB;
-  --shadow:0 10px 40px rgba(0,0,0,.55);
-  --halo:0 0 24px rgba(169,140,255,.40),0 0 60px rgba(255,179,71,.20);
-  /* cosmos atmosphere — spiral galaxy palette */
-  --cosmos-top:rgba(255,160,80,.18);   /* warm core glow up top-right */
-  --cosmos-bot:rgba(40,80,180,.36);    /* deep blue arm sweep bottom */
-  --neb-a:#FF9A3C;                      /* warm golden-orange core */
-  --neb-b:#3A6BD8;                      /* spiral-arm blue */
-  --neb-c:#9B5BFF;                      /* violet mid-arm */
-  --neb-core:#FFE0A0;                   /* hot inner core */
+  --green-soft:rgba(79,168,106,.16);
+  --amber:#FFC15E;            /* galactic core warm */
+  --amber-soft:rgba(255,193,94,.16);
+  --red:#B8527C;              /* dusty red-purple from inner ring */
+  --red-soft:rgba(184,82,124,.14);
+  --purple:#8B5BD4;           /* inner ring violet */
+  --purple-soft:rgba(139,91,212,.18);
+  --purple-glow:#A77BE8;
+  --gold:#FFC15E;             /* primary highlight — the galactic core */
+  --gold-soft:rgba(255,193,94,.18);
+  --star:#E8ECF5;
+  --star-dim:#5A607A;
+  --star-bright:#FFE6B0;      /* hot core white */
+  --brand:#F2F4FA;
+  --shadow:0 10px 40px rgba(0,0,0,.65);
+  --halo:0 0 22px rgba(255,193,94,.22),0 0 50px rgba(139,91,212,.14);
 }
 /* Light = "universe at dawn": a soft lavender-to-sky gradient, deep-violet ink, and
    jewel-tone stars (violet/indigo) instead of glowing gold — gold-on-white reads muddy. */
@@ -16945,32 +16967,13 @@ a{color:inherit;text-decoration:none}
 b{font-weight:700;color:var(--text)}
 
 /* ── Cosmic background (fixed, always behind, alive) ─────────────────────── */
-.fg-cosmos{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;background:
-  /* hot core pinpoint, off-center upper-left like a spiral galaxy nucleus */
-  radial-gradient(circle 6vw at 42% 38%, var(--neb-core) 0%, transparent 70%),
-  /* warm halo wrapping the core */
-  radial-gradient(ellipse 30vw 24vw at 42% 38%, rgba(255,154,60,.32) 0%, transparent 65%),
-  /* blue spiral-arm sweep across the lower-right */
-  radial-gradient(ellipse 95% 70% at 78% 95%, var(--cosmos-bot) 0%, transparent 60%),
-  /* subtle violet wash up top */
-  radial-gradient(ellipse 120% 60% at 50% -10%, var(--cosmos-top) 0%, transparent 60%),
-  var(--bg)}
-.fg-cosmos-svg{position:absolute;inset:0;width:100%;height:100%;opacity:1}
-[data-theme="light"] .fg-cosmos-svg{opacity:.55}
+/* Pure black void. NO gradients, NO color washes. The galaxy lives in accents,
+   not in the background. The body is the empty space between stars. */
+.fg-cosmos{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;background:var(--bg)}
+.fg-cosmos-svg{position:absolute;inset:0;width:100%;height:100%;opacity:.85}
+[data-theme="light"] .fg-cosmos-svg{opacity:.50}
 .fg-cosmic-star{fill:var(--star);opacity:var(--o,.5);animation:fgcosmic var(--d,4s) ease-in-out infinite}
 @keyframes fgcosmic{0%,100%{opacity:calc(var(--o,.5) * .3)}50%{opacity:var(--o,.5)}}
-
-.fg-neb{position:absolute;border-radius:50%;filter:blur(90px);pointer-events:none;will-change:transform}
-/* warm golden core glow — sits roughly where the galactic nucleus is */
-.fg-neb-1{width:48vw;height:48vw;top:8vh;left:22vw;background:radial-gradient(circle,var(--neb-a) 0%,transparent 60%);opacity:.55;animation:fgdrift1 38s ease-in-out infinite;mix-blend-mode:screen}
-/* deep blue spiral arm sweep across the lower right */
-.fg-neb-2{width:70vw;height:70vw;bottom:-28vw;right:-22vw;background:radial-gradient(circle,var(--neb-b) 0%,transparent 62%);opacity:.55;animation:fgdrift2 46s ease-in-out infinite;mix-blend-mode:screen}
-/* violet mid-arm filling the gap between */
-.fg-neb-3{width:46vw;height:46vw;top:42%;left:48%;background:radial-gradient(circle,var(--neb-c) 0%,transparent 62%);opacity:.40;animation:fgdrift3 52s ease-in-out infinite;mix-blend-mode:screen}
-[data-theme="light"] .fg-neb{opacity:.30 !important;filter:blur(70px)}
-@keyframes fgdrift1{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-6vw,4vw) scale(1.12)}}
-@keyframes fgdrift2{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(7vw,-5vw) scale(1.15)}}
-@keyframes fgdrift3{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-5vw,-6vw) scale(.9)}}
 
 /* shooting stars: a bright head with a fading tail streaking down-left */
 .fg-shoot{position:absolute;width:2px;height:2px;border-radius:50%;background:var(--star-bright);
@@ -17024,8 +17027,9 @@ b{font-weight:700;color:var(--text)}
 
 /* ── Hero ─────────────────────────────────────────────────────────────────── */
 .fg-hero{position:relative;max-width:1100px;margin:0 auto;padding:60px 24px 60px;text-align:center;overflow:visible}
-.fg-hero-glow{position:absolute;width:900px;height:900px;border-radius:50%;top:-300px;left:50%;transform:translateX(-50%);
-  background:radial-gradient(circle,var(--purple-soft) 0%,transparent 55%);pointer-events:none}
+/* Tight warm pinpoint, not a flooding wash. Sits above the headline like a distant star. */
+.fg-hero-glow{position:absolute;width:280px;height:280px;border-radius:50%;top:-60px;left:50%;transform:translateX(-50%);
+  background:radial-gradient(circle,rgba(255,193,94,.18) 0%,transparent 65%);pointer-events:none;filter:blur(20px)}
 .fg-hero-constellation{position:absolute;inset:0;width:100%;height:100%;max-height:520px;pointer-events:none;opacity:.7}
 [data-theme="light"] .fg-hero-constellation{opacity:.4}
 .fg-hero-star{animation:fgheropulse 4s ease-in-out infinite both}
@@ -17118,6 +17122,42 @@ b{font-weight:700;color:var(--text)}
 .fg-q-card{background:var(--bg-card);border:1px solid var(--line);border-radius:20px;padding:36px;backdrop-filter:blur(20px);animation:fgUp .35s ease both;box-shadow:var(--shadow)}
 @keyframes fgUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
 @keyframes fgFade{from{opacity:0}to{opacity:1}}
+/* ── Reveal-on-view: the animation lives here, not in the background. ────── */
+@keyframes fgRevealUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+@keyframes fgRevealGlow{
+  0%{opacity:0;transform:translateY(14px);filter:blur(6px)}
+  60%{opacity:1;filter:blur(0)}
+  100%{opacity:1;transform:none;filter:blur(0)}
+}
+/* Word-shimmer for hero headlines: a single sweep of warm light across the text. */
+@keyframes fgWordShimmer{
+  0%{background-position:-180% 0}
+  100%{background-position:280% 0}
+}
+[data-reveal]{opacity:0;transform:translateY(18px);will-change:opacity,transform}
+[data-reveal].fg-in{animation:fgRevealUp .7s cubic-bezier(.22,.61,.36,1) both}
+[data-reveal="glow"].fg-in{animation:fgRevealGlow .9s cubic-bezier(.22,.61,.36,1) both}
+/* Stagger children of [data-reveal-group] — each direct child gets +90ms delay. */
+[data-reveal-group] > [data-reveal]{transition-delay:0s}
+[data-reveal-group].fg-in > [data-reveal]:nth-child(1){animation-delay:.00s}
+[data-reveal-group].fg-in > [data-reveal]:nth-child(2){animation-delay:.09s}
+[data-reveal-group].fg-in > [data-reveal]:nth-child(3){animation-delay:.18s}
+[data-reveal-group].fg-in > [data-reveal]:nth-child(4){animation-delay:.27s}
+[data-reveal-group].fg-in > [data-reveal]:nth-child(5){animation-delay:.36s}
+[data-reveal-group].fg-in > [data-reveal]:nth-child(6){animation-delay:.45s}
+[data-reveal-group].fg-in > [data-reveal]:nth-child(n+7){animation-delay:.54s}
+/* Headline shimmer — applied via class .fg-shimmer-text. Single sweep on reveal. */
+.fg-shimmer-text{
+  background:linear-gradient(90deg,var(--text) 0%,var(--text) 40%,var(--star-bright) 50%,var(--text) 60%,var(--text) 100%);
+  background-size:200% 100%;
+  -webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;color:transparent;
+}
+[data-reveal].fg-in .fg-shimmer-text{animation:fgWordShimmer 2.2s ease-out .3s 1 both}
+@media (prefers-reduced-motion: reduce){
+  [data-reveal],[data-reveal].fg-in{animation:none !important;opacity:1;transform:none}
+  .fg-shimmer-text{animation:none !important;color:var(--text);-webkit-text-fill-color:var(--text)}
+}
 .fg-q-eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:11.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:14px}
 .fg-q-layer-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent)}
 .fg-q-title{font-size:clamp(22px,3.6vw,30px);font-weight:800;letter-spacing:-.025em;margin:0 0 10px;color:var(--text);line-height:1.2}

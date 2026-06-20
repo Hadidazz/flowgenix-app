@@ -17193,25 +17193,47 @@ b{font-weight:700;color:var(--text)}
 .fg-btn-back{color:var(--text-soft);font-size:14px;padding:11px 18px;border-radius:100px;border:1px solid var(--line);background:transparent;transition:all .15s}
 .fg-btn-back:hover{border-color:var(--line-strong);color:var(--text)}
 
-/* ── Hero ─────────────────────────────────────────────────────────────────── */
-.fg-hero{position:relative;max-width:1100px;margin:0 auto;padding:60px 24px 60px;text-align:center;overflow:visible}
-/* No standalone glow — the galaxy SVG below IS the centerpiece. Keep an empty
-   element so existing markup doesn't break. */
+/* ── Hero: the galaxy IS the stage; text floats inside it ────────────────── */
+/* Hero owns a full-viewport-ish canvas where the galaxy fills the scene and
+   the headline/CTAs float inside the disk. Min-height gives the galaxy room
+   to breathe; overflow:hidden contains the oversized SVG. */
+.fg-hero{position:relative;min-height:min(92vh,860px);max-width:none;margin:0;padding:0;text-align:center;
+  overflow:hidden;display:flex;align-items:center;justify-content:center}
 .fg-hero-glow{display:none}
-.fg-hero-constellation{position:absolute;top:-80px;left:50%;transform:translateX(-50%);
-  width:min(1320px,124%);height:auto;aspect-ratio:1600/1000;pointer-events:none;opacity:1;z-index:0;
-  filter:drop-shadow(0 0 30px rgba(255,193,94,.18))}
-[data-theme="light"] .fg-hero-constellation{opacity:.55;filter:none}
+/* Galaxy spans the full hero, oversized so the arms reach the page edges
+   instead of looking like a logo. animation: very slow breathe (12s). */
+.fg-hero-constellation{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:min(1900px,142%);height:auto;aspect-ratio:1600/1000;pointer-events:none;opacity:1;z-index:0;
+  filter:drop-shadow(0 0 40px rgba(255,193,94,.22)) drop-shadow(0 0 100px rgba(74,127,224,.10));
+  animation:fgGalaxyBreathe 14s ease-in-out infinite}
+[data-theme="light"] .fg-hero-constellation{opacity:.55;filter:none;animation:none}
+@keyframes fgGalaxyBreathe{
+  0%,100%{transform:translate(-50%,-50%) scale(1)}
+  50%    {transform:translate(-50%,-50%) scale(1.025)}
+}
 .fg-hero-star{animation:fgheropulse 4s ease-in-out infinite both}
-@keyframes fgheropulse{0%,100%{opacity:.4}50%{opacity:1}}
-.fg-hero-content{position:relative;z-index:2;padding:60px 0}
+@keyframes fgheropulse{0%,100%{opacity:.45}50%{opacity:1}}
+
+/* Hero content floats on top of the galaxy. Text gets a dark vignette behind
+   it so it stays readable over the bright core, and a glow so it feels lit
+   from inside the galaxy. */
+.fg-hero-content{position:relative;z-index:2;padding:60px 24px;max-width:900px;margin:0 auto;width:100%}
+.fg-hero-content::before{
+  content:"";position:absolute;inset:-40px -10vw;z-index:-1;pointer-events:none;
+  background:radial-gradient(ellipse 50% 60% at 50% 50%,rgba(0,0,0,.45) 0%,rgba(0,0,0,.22) 50%,transparent 80%);
+  filter:blur(40px);
+}
+[data-theme="light"] .fg-hero-content::before{background:none}
 .fg-eyebrow{display:inline-block;font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.18em;color:var(--gold);background:var(--gold-soft);padding:6px 14px;border-radius:100px;border:1px solid var(--gold-soft)}
-.fg-hero-h{font-size:clamp(36px,7vw,68px);font-weight:800;line-height:1.05;letter-spacing:-.035em;margin:24px 0;color:var(--text)}
+/* Headline floats — drop-shadow gives it weight against the bright disk */
+.fg-hero-h{font-size:clamp(36px,7.4vw,76px);font-weight:800;line-height:1.05;letter-spacing:-.035em;margin:24px 0;color:var(--text);
+  text-shadow:0 2px 24px rgba(0,0,0,.55),0 0 80px rgba(255,193,94,.18)}
 .fg-grad{background:linear-gradient(120deg,var(--gold),var(--purple-glow));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-.fg-hero-p{font-size:18px;color:var(--text-soft);max-width:640px;margin:0 auto 32px;line-height:1.6}
+.fg-hero-p{font-size:18px;color:#E0E5F2;max-width:640px;margin:0 auto 32px;line-height:1.6;
+  text-shadow:0 1px 12px rgba(0,0,0,.65)}
 .fg-hero-cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:40px}
 .fg-hero-pills{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:30px}
-.fg-pill{display:inline-flex;align-items:center;gap:6px;background:var(--bg-card);border:1px solid var(--line);border-radius:100px;padding:7px 14px;font-size:12.5px;color:var(--text-soft);backdrop-filter:blur(10px)}
+.fg-pill{display:inline-flex;align-items:center;gap:6px;background:rgba(8,10,18,.55);border:1px solid var(--line);border-radius:100px;padding:7px 14px;font-size:12.5px;color:var(--text-soft);backdrop-filter:blur(10px)}
 .fg-pill-star{color:var(--gold);font-size:11px}
 
 /* ── How it works ─────────────────────────────────────────────────────────── */

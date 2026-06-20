@@ -15647,28 +15647,63 @@ function ExplorePage({ onStart }: any) {
 }
 
 function ConstellationHero() {
-  // A small decorative constellation drifting behind the hero copy.
+  // Replaced the flat constellation with a real "galactic centerpiece": a spiral
+  // galaxy ornament that echoes image 2 — bright gold-white core, violet inner
+  // ring, blue outer arms, scattered stars. Concentrated, framed by black. The
+  // colors live HERE so the black background doesn't feel empty.
   return (
-    <svg className="fg-hero-constellation" viewBox="0 0 600 380" aria-hidden>
+    <svg className="fg-hero-constellation" viewBox="0 0 800 500" aria-hidden>
       <defs>
+        {/* Core — hot white-gold pinpoint */}
+        <radialGradient id="fgGalCore" cx="50%" cy="50%" r="50%">
+          <stop offset="0%"  stopColor="#FFF3D8" stopOpacity="1" />
+          <stop offset="14%" stopColor="#FFE6B0" stopOpacity=".95" />
+          <stop offset="32%" stopColor="#FFC15E" stopOpacity=".72" />
+          <stop offset="55%" stopColor="#B85C9E" stopOpacity=".30" />
+          <stop offset="78%" stopColor="#5A47BC" stopOpacity=".14" />
+          <stop offset="100%" stopColor="#000" stopOpacity="0" />
+        </radialGradient>
+        {/* Inner violet-red ring */}
+        <radialGradient id="fgGalRing" cx="50%" cy="50%" r="50%">
+          <stop offset="30%" stopColor="#000" stopOpacity="0" />
+          <stop offset="48%" stopColor="#8B5BD4" stopOpacity=".34" />
+          <stop offset="62%" stopColor="#B8527C" stopOpacity=".22" />
+          <stop offset="100%" stopColor="#000" stopOpacity="0" />
+        </radialGradient>
+        {/* Outer arms — spiral blue */}
+        <radialGradient id="fgGalArm" cx="50%" cy="50%" r="50%">
+          <stop offset="55%" stopColor="#000" stopOpacity="0" />
+          <stop offset="74%" stopColor="#4A7FE0" stopOpacity=".30" />
+          <stop offset="88%" stopColor="#3A5BB8" stopOpacity=".16" />
+          <stop offset="100%" stopColor="#000" stopOpacity="0" />
+        </radialGradient>
         <radialGradient id="fghs">
-          <stop offset="0%" stopColor="var(--star-bright)" stopOpacity="1" />
-          <stop offset="100%" stopColor="var(--star-bright)" stopOpacity="0" />
+          <stop offset="0%" stopColor="#FFE6B0" stopOpacity="1" />
+          <stop offset="100%" stopColor="#FFE6B0" stopOpacity="0" />
         </radialGradient>
       </defs>
+      {/* Galaxy disk — tilted slightly, layered for depth */}
+      <g transform="translate(400 250) rotate(-18)">
+        <ellipse cx="0" cy="0" rx="360" ry="92"  fill="url(#fgGalArm)"  />
+        <ellipse cx="0" cy="0" rx="290" ry="74"  fill="url(#fgGalArm)"  opacity=".85" />
+        <ellipse cx="0" cy="0" rx="230" ry="66"  fill="url(#fgGalRing)" />
+        <ellipse cx="0" cy="0" rx="180" ry="56"  fill="url(#fgGalRing)" opacity=".9" />
+        <ellipse cx="0" cy="0" rx="160" ry="120" fill="url(#fgGalCore)" />
+        <ellipse cx="0" cy="0" rx="110" ry="80"  fill="url(#fgGalCore)" opacity=".9" />
+      </g>
+      {/* Scattered foreground stars — give the void texture */}
       {[
-        [60, 80], [180, 50], [320, 100], [480, 70], [540, 180],
-        [420, 240], [280, 300], [140, 260], [50, 200], [220, 170], [380, 170],
-      ].map(([x, y], i) => (
-        <g key={i} className="fg-hero-star" style={{ animationDelay: `${i * 0.3}s` }}>
-          <circle cx={x} cy={y} r="14" fill="url(#fghs)" opacity=".5" />
-          <circle cx={x} cy={y} r="2.6" fill="var(--star-bright)" />
+        [70, 60, 1.6], [160, 110, 1.0], [240, 50, 1.3], [330, 90, 0.8],
+        [470, 60, 1.4], [570, 110, 1.0], [660, 80, 1.8], [740, 140, 1.1],
+        [60, 220, 1.2], [50, 360, 1.5], [110, 430, 0.9], [180, 480, 1.1],
+        [310, 460, 1.3], [430, 450, 0.8], [560, 470, 1.6], [680, 430, 1.0],
+        [740, 320, 1.4], [710, 210, 0.9], [620, 60, 0.7], [200, 280, 0.6],
+      ].map(([x, y, r], i) => (
+        <g key={i} className="fg-hero-star" style={{ animationDelay: `${i * 0.2}s` }}>
+          <circle cx={x} cy={y} r={Number(r) * 6} fill="url(#fghs)" opacity=".35" />
+          <circle cx={x} cy={y} r={r} fill="#FFE6B0" />
         </g>
       ))}
-      <g className="fg-hero-lines" stroke="var(--accent)" strokeWidth="1" opacity=".25" fill="none">
-        <path d="M60 80 L180 50 L320 100 L480 70 L540 180 L420 240 L280 300 L140 260 L50 200" />
-        <path d="M220 170 L320 100 M220 170 L280 300 M380 170 L320 100 M380 170 L420 240" />
-      </g>
     </svg>
   );
 }
@@ -17016,22 +17051,26 @@ b{font-weight:700;color:var(--text)}
 .fg-ai-spark{font-size:14px}
 
 /* ── Buttons ──────────────────────────────────────────────────────────────── */
-.fg-btn-primary{position:relative;background:linear-gradient(135deg,var(--accent),var(--purple));color:#fff;font-weight:700;font-size:15px;padding:14px 28px;border-radius:100px;box-shadow:var(--halo);transition:transform .15s,box-shadow .15s;letter-spacing:.01em}
-.fg-btn-primary:hover:not(:disabled){transform:translateY(-1px);box-shadow:var(--halo),0 0 30px rgba(155,140,255,.4)}
+/* Galaxy gradient: warm gold core → violet inner ring → spiral-arm blue.
+   This is the same color sequence as the centerpiece SVG — the button literally
+   carries the galaxy palette. */
+.fg-btn-primary{position:relative;background:linear-gradient(120deg,#FFC15E 0%,#B85C9E 38%,#8B5BD4 65%,#4A7FE0 100%);color:#0A0712;font-weight:700;font-size:15px;padding:14px 28px;border-radius:100px;box-shadow:0 0 22px rgba(255,193,94,.32),0 0 46px rgba(139,91,212,.18);transition:transform .15s,box-shadow .15s;letter-spacing:.01em}
+.fg-btn-primary:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 0 28px rgba(255,193,94,.50),0 0 60px rgba(139,91,212,.32)}
 .fg-btn-primary:disabled{opacity:.4;cursor:not-allowed;box-shadow:none;background:var(--line-strong);color:var(--text-faint)}
 .fg-btn-xl{font-size:17px;padding:18px 38px}
-.fg-btn-ghost{border:1px solid var(--line-strong);background:transparent;color:var(--text);font-weight:600;font-size:14px;padding:12px 22px;border-radius:100px;transition:all .15s}
-.fg-btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+.fg-btn-ghost{border:1px solid rgba(255,193,94,.32);background:rgba(255,193,94,.04);color:var(--gold);font-weight:600;font-size:14px;padding:12px 22px;border-radius:100px;transition:all .15s}
+.fg-btn-ghost:hover{border-color:var(--gold);background:rgba(255,193,94,.12);color:var(--star-bright);box-shadow:0 0 16px rgba(255,193,94,.20)}
 .fg-btn-back{color:var(--text-soft);font-size:14px;padding:11px 18px;border-radius:100px;border:1px solid var(--line);background:transparent;transition:all .15s}
 .fg-btn-back:hover{border-color:var(--line-strong);color:var(--text)}
 
 /* ── Hero ─────────────────────────────────────────────────────────────────── */
 .fg-hero{position:relative;max-width:1100px;margin:0 auto;padding:60px 24px 60px;text-align:center;overflow:visible}
-/* Tight warm pinpoint, not a flooding wash. Sits above the headline like a distant star. */
-.fg-hero-glow{position:absolute;width:280px;height:280px;border-radius:50%;top:-60px;left:50%;transform:translateX(-50%);
-  background:radial-gradient(circle,rgba(255,193,94,.18) 0%,transparent 65%);pointer-events:none;filter:blur(20px)}
-.fg-hero-constellation{position:absolute;inset:0;width:100%;height:100%;max-height:520px;pointer-events:none;opacity:.7}
-[data-theme="light"] .fg-hero-constellation{opacity:.4}
+/* No standalone glow — the galaxy SVG below IS the centerpiece. Keep an empty
+   element so existing markup doesn't break. */
+.fg-hero-glow{display:none}
+.fg-hero-constellation{position:absolute;top:-40px;left:50%;transform:translateX(-50%);
+  width:min(1100px,118%);height:auto;pointer-events:none;opacity:1;z-index:0}
+[data-theme="light"] .fg-hero-constellation{opacity:.55}
 .fg-hero-star{animation:fgheropulse 4s ease-in-out infinite both}
 @keyframes fgheropulse{0%,100%{opacity:.4}50%{opacity:1}}
 .fg-hero-content{position:relative;z-index:2;padding:60px 0}
@@ -17414,6 +17453,99 @@ b{font-weight:700;color:var(--text)}
 
 @media (max-width:680px){
   .fg-nav{display:none}
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ALIVE-WITH-COLOR LAYER (v2): black frames strength, color lives in surfaces
+   ═══════════════════════════════════════════════════════════════════════════ */
+/* Eyebrows: warmer, brighter — the gold lives prominently here */
+[data-theme="dark"] .fg-eyebrow,
+[data-theme="dark"] .fg-sec-eyebrow{
+  color:#FFE6B0;
+  background:linear-gradient(90deg,rgba(255,193,94,.18),rgba(184,82,124,.14));
+  border:1px solid rgba(255,193,94,.34);
+  box-shadow:0 0 14px rgba(255,193,94,.14);
+}
+/* Pill chips on the hero — each gets a subtle galaxy tint */
+[data-theme="dark"] .fg-pill{
+  background:linear-gradient(135deg,rgba(255,193,94,.06),rgba(74,127,224,.08));
+  border:1px solid rgba(255,193,94,.18);
+  color:#E8ECF5;
+}
+[data-theme="dark"] .fg-pill:nth-child(2){border-color:rgba(139,91,212,.24)}
+[data-theme="dark"] .fg-pill:nth-child(3){border-color:rgba(74,127,224,.24)}
+[data-theme="dark"] .fg-pill:nth-child(4){border-color:rgba(184,82,124,.24)}
+[data-theme="dark"] .fg-pill-star{color:var(--gold)}
+/* Cards: dark base + subtle warm cast inside + colorful gradient border on hover.
+   The gradient border uses a layered background to draw a 1px colored outline. */
+[data-theme="dark"] .fg-how-card,
+[data-theme="dark"] .fg-tool-card,
+[data-theme="dark"] .fg-q-card{
+  background:
+    linear-gradient(135deg,rgba(255,193,94,.04),rgba(139,91,212,.05) 55%,rgba(74,127,224,.05)) padding-box,
+    linear-gradient(135deg,rgba(255,193,94,.22),rgba(139,91,212,.18) 55%,rgba(74,127,224,.22)) border-box;
+  border:1px solid transparent;
+  transition:transform .18s,box-shadow .18s,background .18s;
+}
+[data-theme="dark"] .fg-how-card:hover,
+[data-theme="dark"] .fg-tool-card:hover{
+  transform:translateY(-2px);
+  box-shadow:0 10px 32px rgba(255,193,94,.10),0 0 24px rgba(139,91,212,.12);
+}
+/* How-card numerals get the warm gold */
+[data-theme="dark"] .fg-how-num{
+  color:transparent;
+  background:linear-gradient(120deg,#FFC15E,#B85C9E);
+  -webkit-background-clip:text;background-clip:text;
+  font-weight:800;
+}
+/* Field chips on the strip — variety per chip so the row feels like a constellation */
+[data-theme="dark"] .fg-field-chip{
+  background:rgba(12,14,24,.7);
+  border:1px solid rgba(160,170,200,.18);
+  color:var(--text-soft);
+}
+[data-theme="dark"] .fg-field-chip.live{
+  background:linear-gradient(120deg,rgba(255,193,94,.16),rgba(184,82,124,.12));
+  border-color:rgba(255,193,94,.45);
+  color:#FFE6B0;
+  box-shadow:0 0 18px rgba(255,193,94,.18);
+}
+/* CTA band — gentle galactic gradient fill so the bottom CTA feels like the core */
+[data-theme="dark"] .fg-cta-band{
+  background:
+    radial-gradient(ellipse 60% 80% at 50% 50%, rgba(255,193,94,.10), transparent 60%),
+    radial-gradient(ellipse 70% 60% at 30% 30%, rgba(139,91,212,.10), transparent 60%),
+    radial-gradient(ellipse 70% 60% at 70% 70%, rgba(74,127,224,.10), transparent 60%);
+  border-top:1px solid rgba(255,193,94,.16);
+  border-bottom:1px solid rgba(74,127,224,.14);
+}
+/* The hero gradient text — use the full galaxy sweep */
+[data-theme="dark"] .fg-grad{
+  background:linear-gradient(120deg,#FFE6B0 0%,#FFC15E 28%,#B85C9E 55%,#8B5BD4 78%,#4A7FE0 100%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+}
+/* Topbar — add a thin gold line at the bottom so it's not invisible */
+[data-theme="dark"] .fg-top{
+  border-bottom:1px solid rgba(255,193,94,.16);
+  background:linear-gradient(180deg,rgba(8,10,18,.92),rgba(8,10,18,.7));
+}
+/* Logo text — wear the galaxy palette */
+[data-theme="dark"] .fg-logo-text{
+  background:linear-gradient(120deg,#FFE6B0,#FFC15E 40%,#8B5BD4);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+}
+/* Nav links — current view glows gold */
+[data-theme="dark"] .fg-nav-link.on{color:var(--gold);text-shadow:0 0 14px rgba(255,193,94,.4)}
+
+/* Field-picker buttons (FieldPicker shown when starting) — galaxy treatment */
+[data-theme="dark"] .fg-field-pick{
+  background:linear-gradient(135deg,rgba(255,193,94,.05),rgba(74,127,224,.06)) padding-box;
+  border:1px solid rgba(255,193,94,.22);
+}
+[data-theme="dark"] .fg-field-pick:hover{
+  border-color:rgba(255,193,94,.55);
+  box-shadow:0 0 24px rgba(255,193,94,.18);
 }
 `;
 

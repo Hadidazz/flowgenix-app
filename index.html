@@ -15554,8 +15554,11 @@ function Home({ onStart, onExplore }: any) {
   return (
     <>
       <section className="fg-hero">
-        <div className="fg-hero-glow" />
-        <ConstellationHero />
+        {/* Real high-resolution Andromeda photo as the hero backdrop —
+            replaces the previous SVG centerpiece. The text floats on top.
+            The image is loaded once from /galaxy.jpg and styled via CSS so
+            we keep one source of truth for cover/position/vignette. */}
+        <div className="fg-hero-photo" aria-hidden />
         <div className="fg-hero-content" data-reveal-group>
           <span className="fg-eyebrow" data-reveal>The guided way into AI</span>
           <h1 className="fg-hero-h" data-reveal="glow">
@@ -17200,17 +17203,24 @@ b{font-weight:700;color:var(--text)}
 .fg-hero{position:relative;min-height:min(92vh,860px);max-width:none;margin:0;padding:0;text-align:center;
   overflow:hidden;display:flex;align-items:center;justify-content:center}
 .fg-hero-glow{display:none}
-/* Galaxy spans the full hero, oversized so the arms reach the page edges
-   instead of looking like a logo. animation: very slow breathe (12s). */
-.fg-hero-constellation{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-  width:min(1900px,142%);height:auto;aspect-ratio:1600/1000;pointer-events:none;opacity:1;z-index:0;
-  filter:drop-shadow(0 0 40px rgba(255,193,94,.22)) drop-shadow(0 0 100px rgba(74,127,224,.10));
-  animation:fgGalaxyBreathe 14s ease-in-out infinite}
-[data-theme="light"] .fg-hero-constellation{opacity:.55;filter:none;animation:none}
-@keyframes fgGalaxyBreathe{
-  0%,100%{transform:translate(-50%,-50%) scale(1)}
-  50%    {transform:translate(-50%,-50%) scale(1.025)}
+/* Hide the legacy SVG centerpiece — we now use the real photograph below. */
+.fg-hero-constellation{display:none}
+/* The real Andromeda photo backdrop. cover-fits to fill the hero, centered.
+   Three layered radial gradients darken the edges + a dark area behind the
+   text so the floating headline reads cleanly over the bright core.
+   The image itself (galaxy.jpg) sits at the project root and is uploaded
+   alongside index.html by github_deploy.py. */
+.fg-hero-photo{position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:
+    /* Text-area vignette — dark oval behind where the headline sits */
+    radial-gradient(ellipse 55% 45% at 50% 50%, rgba(0,0,0,.55) 0%, rgba(0,0,0,.30) 45%, transparent 75%),
+    /* Edge fade to pure black so the photo blends into the page void */
+    radial-gradient(ellipse 100% 100% at 50% 50%, transparent 55%, rgba(0,0,0,.60) 85%, #000 100%),
+    /* The galaxy itself */
+    url("galaxy.jpg") center center / cover no-repeat,
+    #000;
 }
+[data-theme="light"] .fg-hero-photo{display:none}
 .fg-hero-star{animation:fgheropulse 4s ease-in-out infinite both}
 @keyframes fgheropulse{0%,100%{opacity:.45}50%{opacity:1}}
 

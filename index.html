@@ -15554,11 +15554,7 @@ function Home({ onStart, onExplore }: any) {
   return (
     <>
       <section className="fg-hero">
-        {/* Real high-resolution Andromeda photo as the hero backdrop —
-            replaces the previous SVG centerpiece. The text floats on top.
-            The image is loaded once from /galaxy.jpg and styled via CSS so
-            we keep one source of truth for cover/position/vignette. */}
-        <div className="fg-hero-photo" aria-hidden />
+        <ConstellationHero />
         <div className="fg-hero-content" data-reveal-group>
           <span className="fg-eyebrow" data-reveal>The guided way into AI</span>
           <h1 className="fg-hero-h" data-reveal="glow">
@@ -15650,191 +15646,109 @@ function ExplorePage({ onStart }: any) {
 }
 
 function ConstellationHero() {
-  // High-fidelity galaxy centerpiece. v4 focuses on the two extremes:
-  //
-  //   CENTER (the ignition point):
-  //     • Blazing white pinpoint with multi-layer bloom
-  //     • 8-point starburst rays radiating outward from the core (lens-flare style)
-  //     • Sharper, tighter color falloff so the center reads as a DEFINITE POINT
-  //
-  //   EDGES (the spiral arms):
-  //     • Real curved spiral-arm paths drawn as Bezier curves with gradient strokes
-  //     • Two main arms + two trailing arms swept logarithmically
-  //     • Star clusters seeded ALONG each arm so the eye traces the spiral
-  //     • Each arm fades from warm-near-core to cool-blue at the tips
+  // Rounded galaxy centerpiece (no spiral curves, no starburst rays).
+  // Concentric tilted ellipses do the work — warm hot core fades through
+  // gold → red-violet → blue. The "halo" is a dense, hi-fidelity starfield
+  // that wraps the disk with crisp pinpoint dots at varied sizes.
   //
   // Deterministic seeded RNG so the starfield never reshuffles between renders.
   const seed = (() => { let s = 4717; return () => { s = (s * 1103515245 + 12345) & 0x7fffffff; return s / 0x7fffffff; }; })();
 
-  // Background starfield — outside the galaxy disk
-  const bgStars: { x: number; y: number; r: number; bright: boolean }[] = [];
-  for (let i = 0; i < 110; i++) {
+  // ── Starfield ──
+  // Two passes: dense ambient field across the void, plus a thicker ring of
+  // stars concentrated around the galactic disk (the "halo").
+  const stars: { x: number; y: number; r: number; bright: boolean; warm?: boolean }[] = [];
+  // Pass 1 — ambient field everywhere (320 stars, mostly tiny)
+  for (let i = 0; i < 320; i++) {
     const x = seed() * 1600;
     const y = seed() * 1000;
-    const dx = (x - 800), dy = (y - 500) * 2.4;
-    const insideDisk = (dx * dx + dy * dy) < (500 * 500);
-    if (insideDisk && seed() > 0.12) continue;
-    const r = 0.5 + Math.pow(seed(), 3.2) * 3.4;
-    bgStars.push({ x, y, r, bright: r > 2.5 });
+    // Cubic falloff → most stars are tiny pinpoints, a few are bright
+    const r = 0.3 + Math.pow(seed(), 4.0) * 3.6;
+    stars.push({ x, y, r, bright: r > 2.4 });
   }
-  // Arm-cluster stars — seeded ALONG each spiral arm so the arms look populated.
-  // For each arm we sample t∈[0..1] and place a few stars near the path.
-  const armStars: { x: number; y: number; r: number }[] = [];
-  // Parametric spiral arm: r(t) = r0 * e^(b*t), theta = t0 + a*t.
-  // Center is (800,500), disk rotated -20deg.
-  const cx = 800, cy = 500, rot = -20 * Math.PI / 180;
-  const armPoint = (t: number, thetaOffset: number) => {
-    const r = 70 + 540 * t;                            // grows outward
-    const theta = thetaOffset + t * 2.4 * Math.PI;     // ~430° of sweep
-    const x0 = r * Math.cos(theta);
-    const y0 = r * Math.sin(theta) * 0.32;              // disk is short along y
-    // rotate the whole disk
-    return [cx + x0 * Math.cos(rot) - y0 * Math.sin(rot), cy + x0 * Math.sin(rot) + y0 * Math.cos(rot)];
-  };
-  for (const thetaOffset of [0, Math.PI]) {
-    for (let i = 0; i < 38; i++) {
-      const t = 0.08 + (i / 38) * 0.92;
-      const [x, y] = armPoint(t, thetaOffset);
-      // Jitter perpendicular to the arm so stars don't lie on a perfect line.
-      const jx = (seed() - 0.5) * 22;
-      const jy = (seed() - 0.5) * 10;
-      const r = 0.5 + Math.pow(seed(), 3) * 2.4;
-      armStars.push({ x: x + jx, y: y + jy, r });
-    }
+  // Pass 2 — halo ring around the disk (180 stars, denser, varied)
+  // Sample inside an annulus around the disk center, with disk-flattened ellipse.
+  for (let i = 0; i < 180; i++) {
+    const angle = seed() * Math.PI * 2;
+    // Annulus: between 220 and 640 radial units from center
+    const rad = 220 + seed() * 420;
+    const x = 800 + Math.cos(angle) * rad;
+    const y = 500 + Math.sin(angle) * rad * 0.42; // disk is flattened along y
+    if (x < 20 || x > 1580 || y < 20 || y > 980) continue;
+    const r = 0.4 + Math.pow(seed(), 3.4) * 3.2;
+    // Hint of warm-colored stars near the inner halo, cool ones at the outer edge
+    const warm = rad < 360 && seed() > 0.6;
+    stars.push({ x, y, r, bright: r > 2.2, warm });
   }
-
-  // Build the spiral arm path d-attribute (two main arms).
-  const armPath = (thetaOffset: number) => {
-    const pts: [number, number][] = [];
-    for (let i = 0; i <= 40; i++) pts.push(armPoint(i / 40, thetaOffset) as [number, number]);
-    return pts.reduce((acc, [x, y], i) =>
-      i === 0 ? `M ${x.toFixed(1)} ${y.toFixed(1)}` : `${acc} L ${x.toFixed(1)} ${y.toFixed(1)}`, "");
-  };
 
   return (
     <svg className="fg-hero-constellation" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid meet" aria-hidden>
       <defs>
-        {/* Hot core — tighter, brighter ignition point */}
+        {/* Hot core — bright white center fading through gold → violet → blue */}
         <radialGradient id="fgGalCore" cx="50%" cy="50%" r="50%">
           <stop offset="0%"   stopColor="#FFFFFF" stopOpacity="1" />
-          <stop offset="3%"   stopColor="#FFFFFF" stopOpacity=".98" />
-          <stop offset="10%"  stopColor="#FFF6DA" stopOpacity=".92" />
-          <stop offset="22%"  stopColor="#FFC97A" stopOpacity=".75" />
-          <stop offset="38%"  stopColor="#FF8A52" stopOpacity=".55" />
-          <stop offset="55%"  stopColor="#D04A8E" stopOpacity=".38" />
-          <stop offset="72%"  stopColor="#7B4BE8" stopOpacity=".22" />
-          <stop offset="88%"  stopColor="#3A4FA8" stopOpacity=".10" />
-          <stop offset="100%" stopColor="#000000" stopOpacity="0" />
-        </radialGradient>
-        <radialGradient id="fgCoreFlare" cx="50%" cy="50%" r="50%">
-          <stop offset="0%"   stopColor="#FFFFFF" stopOpacity=".95" />
-          <stop offset="35%"  stopColor="#FFE6B0" stopOpacity=".30" />
-          <stop offset="100%" stopColor="#FFE6B0" stopOpacity="0" />
-        </radialGradient>
-        {/* Arm stroke gradient — warm near core, cool at the tip */}
-        <linearGradient id="fgArmStroke" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%"  stopColor="#FFE6B0" stopOpacity="0" />
-          <stop offset="15%" stopColor="#FFC97A" stopOpacity=".65" />
-          <stop offset="40%" stopColor="#D25E8E" stopOpacity=".55" />
-          <stop offset="70%" stopColor="#7B5BE8" stopOpacity=".45" />
-          <stop offset="92%" stopColor="#4A7FE0" stopOpacity=".30" />
-          <stop offset="100%" stopColor="#4A7FE0" stopOpacity="0" />
-        </linearGradient>
-        {/* Outer disk wash — kept faint, just a halo */}
-        <radialGradient id="fgGalArm" cx="50%" cy="50%" r="50%">
-          <stop offset="35%"  stopColor="#000000" stopOpacity="0" />
-          <stop offset="58%"  stopColor="#4A6FCC" stopOpacity=".22" />
-          <stop offset="80%"  stopColor="#2A3F90" stopOpacity=".10" />
+          <stop offset="6%"   stopColor="#FFF6DA" stopOpacity=".95" />
+          <stop offset="18%"  stopColor="#FFD27A" stopOpacity=".82" />
+          <stop offset="34%"  stopColor="#FFAA52" stopOpacity=".62" />
+          <stop offset="52%"  stopColor="#D25E8E" stopOpacity=".40" />
+          <stop offset="72%"  stopColor="#7B5BE8" stopOpacity=".24" />
+          <stop offset="88%"  stopColor="#3A4FA8" stopOpacity=".12" />
           <stop offset="100%" stopColor="#000000" stopOpacity="0" />
         </radialGradient>
         <radialGradient id="fgGalBulge" cx="50%" cy="50%" r="50%">
-          <stop offset="0%"   stopColor="#FFEEC0" stopOpacity=".90" />
-          <stop offset="40%"  stopColor="#FF9A52" stopOpacity=".50" />
+          <stop offset="0%"   stopColor="#FFEEC0" stopOpacity=".85" />
+          <stop offset="40%"  stopColor="#FF9A52" stopOpacity=".48" />
           <stop offset="80%"  stopColor="#B85C9E" stopOpacity=".18" />
           <stop offset="100%" stopColor="#000000" stopOpacity="0" />
         </radialGradient>
+        {/* Outer disk — soft blue halo wrap */}
+        <radialGradient id="fgGalDisk" cx="50%" cy="50%" r="50%">
+          <stop offset="30%"  stopColor="#000000" stopOpacity="0" />
+          <stop offset="55%"  stopColor="#5B7FE0" stopOpacity=".28" />
+          <stop offset="78%"  stopColor="#3A5BB8" stopOpacity=".16" />
+          <stop offset="100%" stopColor="#000000" stopOpacity="0" />
+        </radialGradient>
+        {/* Star halo gradient for bright stars */}
         <radialGradient id="fgStarHalo">
           <stop offset="0%"  stopColor="#FFF3D6" stopOpacity=".95" />
           <stop offset="40%" stopColor="#FFD27A" stopOpacity=".30" />
           <stop offset="100%" stopColor="#FFD27A" stopOpacity="0" />
         </radialGradient>
-        {/* Filters — separate blur amounts for each layer keeps the core sharp
-            and the halo soft */}
+        <radialGradient id="fgStarHaloCool">
+          <stop offset="0%"  stopColor="#D8E4FF" stopOpacity=".95" />
+          <stop offset="40%" stopColor="#5B7FE0" stopOpacity=".26" />
+          <stop offset="100%" stopColor="#5B7FE0" stopOpacity="0" />
+        </radialGradient>
+        {/* Blur filters for the layered glow */}
         <filter id="fgSoftBloom" x="-30%" y="-60%" width="160%" height="220%">
-          <feGaussianBlur stdDeviation="8" />
-        </filter>
-        <filter id="fgArmBloom" x="-15%" y="-15%" width="130%" height="130%">
-          <feGaussianBlur stdDeviation="2.4" />
+          <feGaussianBlur stdDeviation="6" />
         </filter>
         <filter id="fgCoreBloom" x="-30%" y="-30%" width="160%" height="160%">
           <feGaussianBlur stdDeviation="2" />
         </filter>
-        <filter id="fgRayBlur" x="-10%" y="-10%" width="120%" height="120%">
-          <feGaussianBlur stdDeviation="1.2" />
-        </filter>
       </defs>
 
-      {/* ─────────── Outer disk halo (very faint) ─────────── */}
-      <g transform="translate(800 500) rotate(-20)">
-        <ellipse rx="700" ry="160" fill="url(#fgGalArm)" opacity=".85" filter="url(#fgSoftBloom)" />
-        <ellipse rx="560" ry="130" fill="url(#fgGalArm)" opacity=".70" />
+      {/* ─────────── Galaxy: rounded concentric disk (no spiral arms) ─────────── */}
+      <g transform="translate(800 500) rotate(-18)">
+        {/* Outermost blue disk halo */}
+        <ellipse rx="660" ry="240" fill="url(#fgGalDisk)" opacity=".90" filter="url(#fgSoftBloom)" />
+        <ellipse rx="520" ry="190" fill="url(#fgGalDisk)" opacity=".75" />
+        {/* Warm bulge */}
+        <ellipse rx="320" ry="170" fill="url(#fgGalBulge)" filter="url(#fgCoreBloom)" />
+        <ellipse rx="220" ry="120" fill="url(#fgGalBulge)" opacity=".95" />
+        {/* Hot core */}
+        <ellipse rx="160" ry="110" fill="url(#fgGalCore)" filter="url(#fgCoreBloom)" />
+        <ellipse rx="70"  ry="48"  fill="url(#fgGalCore)" />
       </g>
 
-      {/* ─────────── SPIRAL ARMS — the real edge structure ─────────── */}
-      <g filter="url(#fgArmBloom)" opacity=".95">
-        {/* Two main arms — wider, brighter */}
-        <path d={armPath(0)}        stroke="url(#fgArmStroke)" strokeWidth="34" fill="none" strokeLinecap="round" opacity=".80" />
-        <path d={armPath(Math.PI)}  stroke="url(#fgArmStroke)" strokeWidth="34" fill="none" strokeLinecap="round" opacity=".80" />
-        {/* Inner trailing arm pair — thinner, slightly offset */}
-        <path d={armPath(Math.PI * 0.45)} stroke="url(#fgArmStroke)" strokeWidth="18" fill="none" strokeLinecap="round" opacity=".55" />
-        <path d={armPath(Math.PI * 1.45)} stroke="url(#fgArmStroke)" strokeWidth="18" fill="none" strokeLinecap="round" opacity=".55" />
-      </g>
-
-      {/* ─────────── Star clusters seeded along each arm ─────────── */}
-      <g opacity=".9">
-        {armStars.map((s, i) => (
-          <g key={`a${i}`}>
-            <circle cx={s.x} cy={s.y} r={s.r * 3.2} fill="url(#fgStarHalo)" opacity=".55" />
-            <circle cx={s.x} cy={s.y} r={s.r} fill="#FFF3D6" />
-          </g>
-        ))}
-      </g>
-
-      {/* ─────────── CENTER — bright bulge + ignition point + starburst rays ─────────── */}
-      <g transform="translate(800 500) rotate(-20)">
-        <ellipse rx="240" ry="92"  fill="url(#fgGalBulge)" filter="url(#fgCoreBloom)" />
-        <ellipse rx="160" ry="62"  fill="url(#fgGalBulge)" opacity=".95" />
-        {/* Core ignition */}
-        <ellipse rx="110" ry="68"  fill="url(#fgGalCore)" filter="url(#fgCoreBloom)" />
-        <ellipse rx="40"  ry="28"  fill="url(#fgGalCore)" />
-        {/* Pure-white pinpoint at the very center */}
-        <circle r="7" fill="#FFFFFF" />
-        <circle r="14" fill="url(#fgCoreFlare)" />
-        {/* 8-point starburst rays — diffraction-spike lens-flare effect */}
-        <g stroke="#FFF6DA" strokeLinecap="round" filter="url(#fgRayBlur)">
-          {/* Primary 4-way (horizontal + vertical) */}
-          <line x1="-220" y1="0" x2="220" y2="0" strokeWidth="1.8" opacity=".85" />
-          <line x1="0" y1="-110" x2="0" y2="110" strokeWidth="1.4" opacity=".70" />
-          {/* Secondary 4-way (diagonals), shorter */}
-          <line x1="-110" y1="-55" x2="110" y2="55" strokeWidth="1.0" opacity=".50" />
-          <line x1="-110" y1="55"  x2="110" y2="-55" strokeWidth="1.0" opacity=".50" />
-        </g>
-      </g>
-
-      {/* ─────────── Background starfield ─────────── */}
-      {bgStars.map((s, i) => (
-        <g key={`b${i}`} className="fg-hero-star" style={{ animationDelay: `${(i % 12) * 0.18}s` }}>
+      {/* ─────────── Starfield (500 dots total, ambient + halo ring) ─────────── */}
+      {stars.map((s, i) => (
+        <g key={i} className="fg-hero-star" style={{ animationDelay: `${(i % 16) * 0.16}s` }}>
           {s.bright && (
-            <>
-              <circle cx={s.x} cy={s.y} r={s.r * 5} fill="url(#fgStarHalo)" />
-              {/* 4-point diffraction spike for the brightest stars */}
-              <g stroke="#FFF3D6" strokeLinecap="round" opacity=".55">
-                <line x1={s.x - s.r * 4.5} y1={s.y} x2={s.x + s.r * 4.5} y2={s.y} strokeWidth=".55" />
-                <line x1={s.x} y1={s.y - s.r * 4.5} x2={s.x} y2={s.y + s.r * 4.5} strokeWidth=".55" />
-              </g>
-            </>
+            <circle cx={s.x} cy={s.y} r={s.r * (s.warm ? 4.5 : 4)}
+                    fill={s.warm ? "url(#fgStarHalo)" : "url(#fgStarHaloCool)"} />
           )}
-          <circle cx={s.x} cy={s.y} r={s.r} fill="#FFF3D6" />
+          <circle cx={s.x} cy={s.y} r={s.r} fill={s.warm ? "#FFE6B0" : "#F0F4FF"} />
         </g>
       ))}
     </svg>
@@ -17203,24 +17117,11 @@ b{font-weight:700;color:var(--text)}
 .fg-hero{position:relative;min-height:min(92vh,860px);max-width:none;margin:0;padding:0;text-align:center;
   overflow:hidden;display:flex;align-items:center;justify-content:center}
 .fg-hero-glow{display:none}
-/* Hide the legacy SVG centerpiece — we now use the real photograph below. */
-.fg-hero-constellation{display:none}
-/* The real Andromeda photo backdrop. cover-fits to fill the hero, centered.
-   Three layered radial gradients darken the edges + a dark area behind the
-   text so the floating headline reads cleanly over the bright core.
-   The image itself (galaxy.jpg) sits at the project root and is uploaded
-   alongside index.html by github_deploy.py. */
-.fg-hero-photo{position:absolute;inset:0;z-index:0;pointer-events:none;
-  background:
-    /* Text-area vignette — dark oval behind where the headline sits */
-    radial-gradient(ellipse 55% 45% at 50% 50%, rgba(0,0,0,.55) 0%, rgba(0,0,0,.30) 45%, transparent 75%),
-    /* Edge fade to pure black so the photo blends into the page void */
-    radial-gradient(ellipse 100% 100% at 50% 50%, transparent 55%, rgba(0,0,0,.60) 85%, #000 100%),
-    /* The galaxy itself */
-    url("galaxy.jpg") center center / cover no-repeat,
-    #000;
-}
-[data-theme="light"] .fg-hero-photo{display:none}
+/* Back to the SVG galaxy centerpiece at full hero size (v5 base). */
+.fg-hero-constellation{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:min(1900px,142%);height:auto;aspect-ratio:1600/1000;pointer-events:none;opacity:1;z-index:0;
+  filter:drop-shadow(0 0 40px rgba(255,193,94,.22)) drop-shadow(0 0 100px rgba(74,127,224,.10))}
+[data-theme="light"] .fg-hero-constellation{opacity:.55;filter:none}
 .fg-hero-star{animation:fgheropulse 4s ease-in-out infinite both}
 @keyframes fgheropulse{0%,100%{opacity:.45}50%{opacity:1}}
 

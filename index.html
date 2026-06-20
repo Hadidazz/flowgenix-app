@@ -8901,11 +8901,11 @@ interface MarketingAnswers {
   seoTechAccess?: "self" | "developer" | "none";
   seoContentCapacity?: "1_2" | "3_6" | "7_plus";
   // Performance
-  perfPlatform?: "google" | "meta" | "tiktok_social" | "multi";
+  perfPlatform?: string[]; // multi: google | meta | tiktok_social | multi
   perfObjective?: "awareness" | "leads" | "sales" | "retarget";
   perfSpend?: "under_1k" | "1k_10k" | "10k_100k" | "100k_plus";
   perfTracking?: "yes" | "partial" | "no" | "unsure";
-  perfCreativeFormat?: "static" | "video" | "carousel" | "search_text" | "mix";
+  perfCreativeFormat?: string[]; // multi: static | video | carousel | search_text | mix
   perfAiContent?: AiContentFlag;
   // Email
   emailPlatform?: "klaviyo" | "mailchimp" | "hubspot_crm" | "none";
@@ -8914,24 +8914,24 @@ interface MarketingAnswers {
   emailListSize?: "under_1k" | "1k_10k" | "10k_100k" | "100k_plus";
   emailDesigner?: "self" | "designer" | "plain_text";
   // Social
-  socialPlatform?: "instagram" | "tiktok" | "linkedin" | "youtube" | "x" | "multi";
-  socialFormat?: "short_video" | "long_video" | "static" | "text" | "mix";
-  socialPurpose?: "awareness" | "traffic_leads" | "community" | "sales" | "thought_leadership";
+  socialPlatform?: string[]; // multi: instagram | tiktok | linkedin | youtube | x | multi
+  socialFormat?: string[]; // multi: short_video | long_video | static | text | mix
+  socialPurpose?: string[]; // multi: awareness | traffic_leads | community | sales | thought_leadership
   socialPain?: "ideas" | "production_slow" | "consistency" | "engagement" | "measurement";
   socialAiContent?: AiContentFlag;
   // Brand
   brandStage?: "new" | "refresh" | "scaling" | "rebrand";
-  brandScope?: "identity" | "messaging" | "campaign" | "guidelines";
+  brandScope?: string[]; // multi: identity | messaging | campaign | guidelines
   brandProducer?: "self" | "in_house" | "agency";
   brandAiContent?: AiContentFlag;
   // Content Marketing
-  contentType?: "written" | "long_form" | "video" | "audio" | "mixed";
+  contentType?: string[]; // multi: written | long_form | video | audio | mixed
   contentFunnel?: "tof" | "mof" | "bof" | "full";
-  contentDistribution?: "blog" | "social" | "email" | "third_party" | "multi";
+  contentDistribution?: string[]; // multi: blog | social | email | third_party | multi
   contentPain?: "ideas" | "production_slow" | "not_converting" | "no_strategy" | "scaling_quality";
   contentSearchVisibility?: "yes" | "somewhat" | "no" | "unsure";
   // Analytics
-  analyticsFocus?: "attribution" | "experimentation" | "dashboards" | "funnel";
+  analyticsFocus?: string[]; // multi: attribution | experimentation | dashboards | funnel
   analyticsMaturity?: "no_tracking" | "basic" | "multi_disconnected" | "integrated";
   analyticsGap?: "roi" | "report_speed" | "data_trust" | "what_to_test";
 
@@ -13321,6 +13321,13 @@ const always = () => true;
 const onSpecialty = (...s: Specialty[]) =>
   (a: MarketingAnswers) => !!a.specialty && s.includes(a.specialty);
 
+/** Treat a (possibly multi) field as containing `v`. Handles array | string | undefined. */
+const has = (v: string, field: string[] | string | undefined) =>
+  Array.isArray(field) ? field.includes(v) : field === v;
+/** First element of a multi field (used where engine logic still needs a primary). */
+const first = <T extends string>(field: T[] | T | undefined): T | undefined =>
+  Array.isArray(field) ? field[0] : field;
+
 // ═════════════════════════════════════════════════════════════════════════════
 //  WHO TRUNK (§1.2)
 // ═════════════════════════════════════════════════════════════════════════════
@@ -13508,7 +13515,7 @@ const PERF_1: MarketingQuestion = {
     {
       label: "Platform",
       field: "perfPlatform",
-      type: "single",
+      type: "multi",
       options: [
         opt("Google / Search", "google"),
         opt("Meta (Facebook / Instagram)", "meta"),
@@ -13575,7 +13582,7 @@ const PERF_3: MarketingQuestion = {
     {
       label: "Creative format",
       field: "perfCreativeFormat",
-      type: "single",
+      type: "multi",
       options: [
         opt("Static images", "static"),
         opt("Video", "video"),
@@ -13701,7 +13708,7 @@ const SOCIAL_1: MarketingQuestion = {
     {
       label: "Platform",
       field: "socialPlatform",
-      type: "single",
+      type: "multi",
       options: [
         opt("Instagram", "instagram"),
         opt("TikTok", "tiktok"),
@@ -13714,7 +13721,7 @@ const SOCIAL_1: MarketingQuestion = {
     {
       label: "Content type",
       field: "socialFormat",
-      type: "single",
+      type: "multi",
       options: [
         opt("Short-form video", "short_video"),
         opt("Long-form video", "long_video"),
@@ -13736,7 +13743,7 @@ const SOCIAL_2: MarketingQuestion = {
     {
       label: "Purpose",
       field: "socialPurpose",
-      type: "single",
+      type: "multi",
       options: [
         opt("Brand awareness", "awareness"),
         opt("Traffic / leads", "traffic_leads"),
@@ -13778,10 +13785,10 @@ const SOCIAL_3: MarketingQuestion = {
       ],
     },
   ],
-  // fires only when purpose = sales or traffic_leads
+  // fires only when purpose includes sales or traffic_leads
   isRelevant: (a) =>
     onSpecialty("social")(a) &&
-    (a.socialPurpose === "sales" || a.socialPurpose === "traffic_leads"),
+    (has("sales", a.socialPurpose) || has("traffic_leads", a.socialPurpose)),
 };
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -13807,7 +13814,7 @@ const BRAND_1: MarketingQuestion = {
     {
       label: "Scope",
       field: "brandScope",
-      type: "single",
+      type: "multi",
       options: [
         opt("Full brand identity", "identity"),
         opt("Messaging & positioning", "messaging"),
@@ -13847,8 +13854,8 @@ const BRAND_2: MarketingQuestion = {
       ],
     },
   ],
-  // fires only when scope = campaign
-  isRelevant: (a) => onSpecialty("brand")(a) && a.brandScope === "campaign",
+  // fires only when scope includes campaign
+  isRelevant: (a) => onSpecialty("brand")(a) && has("campaign", a.brandScope),
 };
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -13863,7 +13870,7 @@ const CM_1: MarketingQuestion = {
     {
       label: "Content type",
       field: "contentType",
-      type: "single",
+      type: "multi",
       options: [
         opt("Written (blog posts, articles)", "written"),
         opt("Long-form assets (whitepapers, ebooks)", "long_form"),
@@ -13896,7 +13903,7 @@ const CM_2: MarketingQuestion = {
     {
       label: "Distribution",
       field: "contentDistribution",
-      type: "single",
+      type: "multi",
       options: [
         opt("Company blog", "blog"),
         opt("Social media", "social"),
@@ -13942,7 +13949,7 @@ const CM_3: MarketingQuestion = {
   // fires only when distribution includes blog OR multi
   isRelevant: (a) =>
     onSpecialty("content")(a) &&
-    (a.contentDistribution === "blog" || a.contentDistribution === "multi"),
+    (has("blog", a.contentDistribution) || has("multi", a.contentDistribution)),
 };
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -13958,7 +13965,7 @@ const AG_1: MarketingQuestion = {
     {
       label: "Focus",
       field: "analyticsFocus",
-      type: "single",
+      type: "multi",
       options: [
         opt("Attribution & multi-channel reporting", "attribution"),
         opt("Experimentation / A-B testing", "experimentation"),
@@ -14379,7 +14386,12 @@ function nextQuestion(a: MarketingAnswers): MarketingQuestion | null {
 }
 
 function isQuestionAnswered(q: MarketingQuestion, a: MarketingAnswers): boolean {
-  return q.parts.every((p) => a[p.field] !== undefined && a[p.field] !== null);
+  return q.parts.every((p) => {
+    const v = a[p.field];
+    if (v === undefined || v === null) return false;
+    if (Array.isArray(v)) return v.length > 0;
+    return true;
+  });
 }
 
 
@@ -14945,26 +14957,34 @@ function cpShouldFire(stage: MarketingStage): boolean {
   return !!stage.triggersCP;
 }
 
-/** Derive pre-filled CP format from earlier branch answers. */
+/** First element when a field is multi, else the field itself. */
+function pick(field: string[] | string | undefined): string | undefined {
+  return Array.isArray(field) ? field[0] : field;
+}
+
+/** Derive pre-filled CP format from earlier branch answers. Multi-pick fields
+ *  use their first selection as the primary format hint; user can change in CP. */
 function prefillFormat(a: MarketingAnswers): CpFormat | undefined {
-  // Social Media (SM-1 Part B)
-  if (a.socialFormat === "short_video") return "short_video";
-  if (a.socialFormat === "long_video") return "long_video";
-  if (a.socialFormat === "static") return "static";
-  if (a.socialFormat === "text") return "text";
-  if (a.socialFormat === "mix") return "mixed";
-  // Content Marketing (CM-1 Part A)
-  if (a.contentType === "video") return "long_video";
-  if (a.contentType === "audio") return "audio";
-  if (a.contentType === "written") return "text";
-  if (a.contentType === "long_form") return "text";
-  if (a.contentType === "mixed") return "mixed";
-  // Performance (PERF-3 Part A)
-  if (a.perfCreativeFormat === "static") return "static";
-  if (a.perfCreativeFormat === "video") return "short_video";
-  if (a.perfCreativeFormat === "carousel") return "carousel";
-  if (a.perfCreativeFormat === "search_text") return "text";
-  if (a.perfCreativeFormat === "mix") return "mixed";
+  const sf = pick(a.socialFormat);
+  if (sf === "short_video") return "short_video";
+  if (sf === "long_video") return "long_video";
+  if (sf === "static") return "static";
+  if (sf === "text") return "text";
+  if (sf === "mix") return "mixed";
+
+  const ct = pick(a.contentType);
+  if (ct === "video") return "long_video";
+  if (ct === "audio") return "audio";
+  if (ct === "written" || ct === "long_form") return "text";
+  if (ct === "mixed") return "mixed";
+
+  const pf = pick(a.perfCreativeFormat);
+  if (pf === "static") return "static";
+  if (pf === "video") return "short_video";
+  if (pf === "carousel") return "carousel";
+  if (pf === "search_text") return "text";
+  if (pf === "mix") return "mixed";
+
   return undefined;
 }
 
@@ -16388,21 +16408,43 @@ const MK_LAYER_LABEL: Record<string, string> = {
 };
 
 function MarketingQuiz({ current, answers, onSubmit, onBack, onEditChip }: any) {
-  const [picks, setPicks] = useState<Record<string, string>>({});
+  // picks[field] is either a string (single) or string[] (multi).
+  const [picks, setPicks] = useState<Record<string, any>>({});
   useEffect(() => { setPicks({}); }, [current?.id]);
   if (!current || !_MK) return null;
 
-  // Branch-aware option swap for SP-b / SP-c.
+  // Branch-aware option swap for SP-b / SP-c (always single).
   let parts = current.parts;
   if (current.id === "SP-b" && answers.specialty) parts = [{ ...current.parts[0], options: _MK.spBreakdownOptions(answers.specialty) }];
   if (current.id === "SP-c" && answers.specialty) parts = [{ ...current.parts[0], options: _MK.spRepurposeOptions(answers.specialty) }];
 
   const chips = _MK.activeChips(answers);
   const compound = parts.length > 1;
-  const ready = parts.every((p: any) => picks[p.field] !== undefined);
+  const anyMulti = parts.some((p: any) => p.type === "multi");
+  const ready = parts.every((p: any) => {
+    const v = picks[p.field];
+    if (v === undefined) return false;
+    if (p.type === "multi") return Array.isArray(v) && v.length > 0;
+    return true;
+  });
+
+  function togglePick(p: any, value: string) {
+    if (p.type === "multi") {
+      const cur: string[] = Array.isArray(picks[p.field]) ? picks[p.field] : [];
+      const next = cur.includes(value) ? cur.filter((v) => v !== value) : [...cur, value];
+      setPicks({ ...picks, [p.field]: next });
+    } else {
+      setPicks({ ...picks, [p.field]: value });
+    }
+  }
+  function isSelected(p: any, value: string) {
+    const v = picks[p.field];
+    if (p.type === "multi") return Array.isArray(v) && v.includes(value);
+    return v === value;
+  }
 
   const ESTIMATED_TOTAL = 13;
-  const answeredCount = Object.values(answers).filter((v) => v !== undefined && v !== null).length;
+  const answeredCount = Object.values(answers).filter((v) => v !== undefined && v !== null && (!Array.isArray(v) || v.length > 0)).length;
   const pct = Math.min(1, (answeredCount + 0.15) / ESTIMATED_TOTAL);
 
   return (
@@ -16428,15 +16470,19 @@ function MarketingQuiz({ current, answers, onSubmit, onBack, onEditChip }: any) 
           </div>
           <h2 className="fg-q-title">{current.title}</h2>
           {current.hint && <p className="fg-q-hint">{current.hint}</p>}
+          {anyMulti && !compound && <div className="fg-multi-note">Pick any that apply</div>}
 
           {compound ? (
             <div className="fg-compound">
               {parts.map((p: any) => (
                 <div className="fg-comp-row" key={p.field}>
-                  <div className="fg-comp-label">{p.label}</div>
+                  <div className="fg-comp-label">
+                    {p.label}
+                    {p.type === "multi" && <span className="fg-multi-note" style={{ marginLeft: "10px", fontSize: "10.5px", padding: "2px 8px" }}>Pick any that apply</span>}
+                  </div>
                   <div className="fg-opts">
                     {p.options.map((o: any) => (
-                      <button key={o.value} className={`fg-opt ${picks[p.field] === o.value ? "sel" : ""}`} onClick={() => setPicks({ ...picks, [p.field]: o.value })}>
+                      <button key={o.value} className={`fg-opt ${isSelected(p, o.value) ? "sel" : ""}`} onClick={() => togglePick(p, o.value)}>
                         <span>{o.label}</span>
                       </button>
                     ))}
@@ -16447,7 +16493,7 @@ function MarketingQuiz({ current, answers, onSubmit, onBack, onEditChip }: any) 
           ) : (
             <div className="fg-opts">
               {parts[0].options.map((o: any) => (
-                <button key={o.value} className={`fg-opt ${picks[parts[0].field] === o.value ? "sel" : ""}`} onClick={() => setPicks({ ...picks, [parts[0].field]: o.value })}>
+                <button key={o.value} className={`fg-opt ${isSelected(parts[0], o.value) ? "sel" : ""}`} onClick={() => togglePick(parts[0], o.value)}>
                   <span>{o.label}</span>
                   {o.hint && <span className="fg-opt-hint">{o.hint}</span>}
                 </button>
@@ -17357,6 +17403,32 @@ try {
   ReactDOM.createRoot(d5).render(React.createElement(FieldPicker,{onCC:function(){},onMarketing:function(){},onHome:function(){}}));
   setTimeout(function(){ d3.remove(); d4.remove(); d5.remove(); }, 100);
   mksmoke = 'rendered mk-roadmap('+mkStages.length+' stages, first-q '+(mkq&&mkq.id)+') + picker';
+  // Walk Marketing's full question chain picking arrays for any multi part to
+  // confirm the multi-select changes don't trap us in a loop.
+  var walkSt = {}; var walkAsked = []; var guard = 0;
+  while (true) {
+    if (++guard > 40) { walkAsked.push('!!LOOP'); break; }
+    var wq = MK.nextQuestion(walkSt); if (!wq) break;
+    walkAsked.push(wq.id);
+    var rp = wq.parts.slice();
+    if (wq.id === 'SP-b' && walkSt.specialty) rp = [Object.assign({}, wq.parts[0], { options: MK.spBreakdownOptions(walkSt.specialty) })];
+    if (wq.id === 'SP-c' && walkSt.specialty) rp = [Object.assign({}, wq.parts[0], { options: MK.spRepurposeOptions(walkSt.specialty) })];
+    var pickVals = {};
+    rp.forEach(function(part){
+      var first = (part.options[0] || {}).value;
+      var second = (part.options[1] || {}).value;
+      if (part.field === 'specialty') pickVals[part.field] = 'performance';
+      else if (part.field === 'purpose') pickVals[part.field] = 'create';
+      else if (part.type === 'multi') pickVals[part.field] = second ? [first, second] : [first];
+      else pickVals[part.field] = first;
+    });
+    if (wq.apply) wq.apply(walkSt, pickVals);
+    else Object.keys(pickVals).forEach(function(k){ walkSt[k] = pickVals[k]; });
+  }
+  var multiFields = ['perfPlatform','perfCreativeFormat','socialPlatform','socialFormat','socialPurpose','brandScope','contentType','contentDistribution','analyticsFocus'];
+  var multiArrCount = 0;
+  multiFields.forEach(function(f){ if (Array.isArray(walkSt[f]) && walkSt[f].length > 0) multiArrCount++; });
+  mksmoke += ' | walked '+walkAsked.length+' qs, multi-arrays-populated:'+multiArrCount;
 } catch (e) { mksmoke = 'MK-RENDER-ERR: ' + (e && e.message || e); }
 setTimeout(function(){
   var ok = !!document.querySelector('.fg-hero');

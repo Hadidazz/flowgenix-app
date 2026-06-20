@@ -16854,41 +16854,44 @@ function Styles() {
 const CSS = `
 /* ── Theme tokens ─────────────────────────────────────────────────────────── */
 :root, [data-theme="dark"]{
-  --bg:#070B17;
-  --bg-elev:rgba(15,22,40,.65);
-  --bg-card:rgba(20,28,48,.7);
-  --text:#E8ECF6;
-  --text-soft:#A8B0C2;
-  --text-faint:#6E7589;
-  --line:rgba(140,158,200,.16);
-  --line-strong:rgba(160,180,220,.32);
-  --accent:#2D7DD2;
-  --accent-soft:rgba(45,125,210,.15);
+  /* Visual identity: spiral-galaxy. Deep void black with warm core + blue arms.
+     Background is near-pure black (subtle navy cast) so the cosmos layers shine. */
+  --bg:#02030A;
+  --bg-elev:rgba(10,14,28,.72);
+  --bg-card:rgba(14,18,36,.74);
+  --text:#EEF1FA;
+  --text-soft:#B0B7CC;
+  --text-faint:#737A92;
+  --line:rgba(150,170,220,.16);
+  --line-strong:rgba(170,190,230,.34);
+  --accent:#5B9BFF;
+  --accent-soft:rgba(91,155,255,.16);
   --teal:#3EC1A7;
   --teal-soft:rgba(62,193,167,.16);
   --green:#4FA86A;
   --green-soft:rgba(79,168,106,.18);
-  --amber:#E8B044;
-  --amber-soft:rgba(232,176,68,.16);
+  --amber:#FFB347;
+  --amber-soft:rgba(255,179,71,.18);
   --red:#E07B7B;
   --red-soft:rgba(224,123,123,.18);
-  --purple:#9B8CFF;
-  --purple-soft:rgba(155,140,255,.18);
-  --purple-glow:#B7A6FF;
-  --gold:#F5C542;
-  --gold-soft:rgba(245,197,66,.18);
-  --star:#D4D9E6;
+  --purple:#A98CFF;
+  --purple-soft:rgba(169,140,255,.20);
+  --purple-glow:#C9B3FF;
+  --gold:#FFD27A;
+  --gold-soft:rgba(255,210,122,.22);
+  --star:#E0E5F2;
   --star-dim:#7D8398;
-  --star-bright:#FFD66B;
-  --brand:#E8ECF6;
-  --shadow:0 10px 40px rgba(0,0,0,.35);
-  --halo:0 0 24px rgba(155,140,255,.35),0 0 60px rgba(245,197,66,.18);
-  /* cosmos atmosphere */
-  --cosmos-top:rgba(40,30,90,.55);
-  --cosmos-bot:rgba(20,50,95,.42);
-  --neb-a:#6E4BD8;
-  --neb-b:#2D7DD2;
-  --neb-c:#C77DFF;
+  --star-bright:#FFE3A8;
+  --brand:#F2F4FB;
+  --shadow:0 10px 40px rgba(0,0,0,.55);
+  --halo:0 0 24px rgba(169,140,255,.40),0 0 60px rgba(255,179,71,.20);
+  /* cosmos atmosphere — spiral galaxy palette */
+  --cosmos-top:rgba(255,160,80,.18);   /* warm core glow up top-right */
+  --cosmos-bot:rgba(40,80,180,.36);    /* deep blue arm sweep bottom */
+  --neb-a:#FF9A3C;                      /* warm golden-orange core */
+  --neb-b:#3A6BD8;                      /* spiral-arm blue */
+  --neb-c:#9B5BFF;                      /* violet mid-arm */
+  --neb-core:#FFE0A0;                   /* hot inner core */
 }
 /* Light = "universe at dawn": a soft lavender-to-sky gradient, deep-violet ink, and
    jewel-tone stars (violet/indigo) instead of glowing gold — gold-on-white reads muddy. */
@@ -16943,18 +16946,27 @@ b{font-weight:700;color:var(--text)}
 
 /* ── Cosmic background (fixed, always behind, alive) ─────────────────────── */
 .fg-cosmos{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;background:
-  radial-gradient(ellipse 120% 80% at 50% -10%, var(--cosmos-top) 0%, transparent 55%),
-  radial-gradient(ellipse 100% 70% at 80% 110%, var(--cosmos-bot) 0%, transparent 55%),
+  /* hot core pinpoint, off-center upper-left like a spiral galaxy nucleus */
+  radial-gradient(circle 6vw at 42% 38%, var(--neb-core) 0%, transparent 70%),
+  /* warm halo wrapping the core */
+  radial-gradient(ellipse 30vw 24vw at 42% 38%, rgba(255,154,60,.32) 0%, transparent 65%),
+  /* blue spiral-arm sweep across the lower-right */
+  radial-gradient(ellipse 95% 70% at 78% 95%, var(--cosmos-bot) 0%, transparent 60%),
+  /* subtle violet wash up top */
+  radial-gradient(ellipse 120% 60% at 50% -10%, var(--cosmos-top) 0%, transparent 60%),
   var(--bg)}
-.fg-cosmos-svg{position:absolute;inset:0;width:100%;height:100%;opacity:.9}
+.fg-cosmos-svg{position:absolute;inset:0;width:100%;height:100%;opacity:1}
 [data-theme="light"] .fg-cosmos-svg{opacity:.55}
 .fg-cosmic-star{fill:var(--star);opacity:var(--o,.5);animation:fgcosmic var(--d,4s) ease-in-out infinite}
 @keyframes fgcosmic{0%,100%{opacity:calc(var(--o,.5) * .3)}50%{opacity:var(--o,.5)}}
 
 .fg-neb{position:absolute;border-radius:50%;filter:blur(90px);pointer-events:none;will-change:transform}
-.fg-neb-1{width:60vw;height:60vw;top:-18vw;right:-15vw;background:radial-gradient(circle,var(--neb-a) 0%,transparent 65%);opacity:.5;animation:fgdrift1 34s ease-in-out infinite}
-.fg-neb-2{width:55vw;height:55vw;bottom:-22vw;left:-18vw;background:radial-gradient(circle,var(--neb-b) 0%,transparent 65%);opacity:.45;animation:fgdrift2 42s ease-in-out infinite}
-.fg-neb-3{width:40vw;height:40vw;top:35%;left:55%;background:radial-gradient(circle,var(--neb-c) 0%,transparent 65%);opacity:.32;animation:fgdrift3 50s ease-in-out infinite}
+/* warm golden core glow — sits roughly where the galactic nucleus is */
+.fg-neb-1{width:48vw;height:48vw;top:8vh;left:22vw;background:radial-gradient(circle,var(--neb-a) 0%,transparent 60%);opacity:.55;animation:fgdrift1 38s ease-in-out infinite;mix-blend-mode:screen}
+/* deep blue spiral arm sweep across the lower right */
+.fg-neb-2{width:70vw;height:70vw;bottom:-28vw;right:-22vw;background:radial-gradient(circle,var(--neb-b) 0%,transparent 62%);opacity:.55;animation:fgdrift2 46s ease-in-out infinite;mix-blend-mode:screen}
+/* violet mid-arm filling the gap between */
+.fg-neb-3{width:46vw;height:46vw;top:42%;left:48%;background:radial-gradient(circle,var(--neb-c) 0%,transparent 62%);opacity:.40;animation:fgdrift3 52s ease-in-out infinite;mix-blend-mode:screen}
 [data-theme="light"] .fg-neb{opacity:.30 !important;filter:blur(70px)}
 @keyframes fgdrift1{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-6vw,4vw) scale(1.12)}}
 @keyframes fgdrift2{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(7vw,-5vw) scale(1.15)}}
@@ -17068,7 +17080,7 @@ b{font-weight:700;color:var(--text)}
 .fg-stars-off{color:var(--line-strong)}
 
 /* ── Modal ────────────────────────────────────────────────────────────────── */
-.fg-modal-bg{position:fixed;inset:0;background:rgba(7,11,23,.7);backdrop-filter:blur(8px);z-index:60;display:flex;align-items:center;justify-content:center;padding:20px;animation:fgFade .2s ease}
+.fg-modal-bg{position:fixed;inset:0;background:rgba(2,3,10,.78);backdrop-filter:blur(8px);z-index:60;display:flex;align-items:center;justify-content:center;padding:20px;animation:fgFade .2s ease}
 .fg-modal{background:var(--bg-card);border:1px solid var(--line-strong);border-radius:18px;max-width:520px;width:100%;max-height:88vh;overflow:auto;padding:30px;position:relative;backdrop-filter:blur(30px);box-shadow:var(--shadow),var(--halo)}
 .fg-modal-x{position:absolute;top:14px;right:18px;font-size:26px;color:var(--text-soft);line-height:1;transition:color .15s}
 .fg-modal-x:hover{color:var(--text)}
@@ -17228,8 +17240,8 @@ b{font-weight:700;color:var(--text)}
 .fg-coach-cell.avoid{background:var(--red-soft);color:var(--text);border:1px solid var(--red-soft)}
 .fg-coach-cell.avoid .fg-coach-k{color:var(--red)}
 
-.fg-prompt{margin-top:14px;border:1px solid var(--line-strong);border-radius:12px;overflow:hidden;background:#0A0E1A}
-.fg-prompt-head{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#0F1426;color:var(--text-soft);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;border-bottom:1px solid var(--line)}
+.fg-prompt{margin-top:14px;border:1px solid var(--line-strong);border-radius:12px;overflow:hidden;background:#05070F}
+.fg-prompt-head{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#080B18;color:var(--text-soft);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;border-bottom:1px solid var(--line)}
 .fg-copy-btn{font-size:11px;font-weight:700;color:#fff;background:var(--accent);border-radius:6px;padding:5px 12px;transition:background .15s}
 .fg-copy-btn:hover{background:var(--purple)}
 .fg-prompt-body{margin:0;padding:14px;color:#D8E2F0;font-family:'SF Mono',ui-monospace,Menlo,Consolas,monospace;font-size:12px;line-height:1.65;white-space:pre-wrap;word-break:break-word;max-height:280px;overflow:auto}
@@ -17267,7 +17279,7 @@ b{font-weight:700;color:var(--text)}
 .fg-cta-p{color:var(--text-soft);font-size:16px;margin:0 0 28px}
 
 /* ── Footer ───────────────────────────────────────────────────────────────── */
-.fg-footer{border-top:1px solid var(--line);margin-top:0;padding:36px 24px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px;background:rgba(7,11,23,.4);backdrop-filter:blur(20px)}
+.fg-footer{border-top:1px solid var(--line);margin-top:0;padding:36px 24px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px;background:rgba(2,3,10,.55);backdrop-filter:blur(20px)}
 [data-theme="light"] .fg-footer{background:rgba(247,248,251,.5)}
 .fg-footer span{font-size:12.5px;color:var(--text-faint)}
 

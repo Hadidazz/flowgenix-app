@@ -23787,7 +23787,7 @@ const ST_AUTOMATE_NOTES: Partial<Record<ST_StageKey, string>> = {
 };
 
 const ST_SD_ACTIVATION: Record<string, number[]> = {
-  exploring: [1, 2], learning: [2, 3], certification: [3], personal_statements: [4],
+  exploring: [1, 2], learning: [2, 3], certification: [3], test_prep: [2, 3], personal_statements: [4],
   application_materials: [4], searching: [5], interviews: [6], negotiating: [6], advancing: [1, 3],
 };
 
@@ -23868,16 +23868,13 @@ const ST_FOCUS_OPTIONS: ST_QuestionOption[] = [
 ];
 
 const ST_S2B_OPTIONS: Record<string, ST_QuestionOption[]> = {
-  math: [ST_opt("Algebra", "algebra"), ST_opt("Calculus", "calculus"), ST_opt("Statistics", "statistics"), ST_opt("Geometry", "geometry"), ST_opt("Linear Algebra", "linear_algebra"), ST_opt("Other", "other")],
-  science: [ST_opt("Biology", "biology"), ST_opt("Chemistry", "chemistry"), ST_opt("Physics", "physics"), ST_opt("Environmental science", "environmental"), ST_opt("Earth science", "earth"), ST_opt("Other", "other")],
-  engineering: [ST_opt("Mechanical", "mechanical"), ST_opt("Electrical", "electrical"), ST_opt("Civil", "civil"), ST_opt("Computer", "computer"), ST_opt("Chemical", "chemical"), ST_opt("Other", "other")],
+  science: [ST_opt("Biology", "biology"), ST_opt("Chemistry", "chemistry"), ST_opt("Physics", "physics"), ST_opt("Mathematics", "mathematics"), ST_opt("Environmental science", "environmental"), ST_opt("Earth science", "earth"), ST_opt("Other", "other")],
+  engineering: [ST_opt("Mechanical", "mechanical"), ST_opt("Electrical", "electrical"), ST_opt("Civil", "civil"), ST_opt("Architecture", "architecture"), ST_opt("Computer", "computer"), ST_opt("Chemical", "chemical"), ST_opt("Other", "other")],
   cs: [ST_opt("Programming fundamentals", "programming"), ST_opt("Data structures & algorithms", "dsa"), ST_opt("Web development", "web_dev"), ST_opt("Data science / ML", "data_science"), ST_opt("Databases", "databases"), ST_opt("Other", "other")],
   humanities: [ST_opt("History", "history"), ST_opt("Philosophy", "philosophy"), ST_opt("Literature", "literature"), ST_opt("Political science", "polisci"), ST_opt("Sociology", "sociology"), ST_opt("Other", "other")],
   business: [ST_opt("Accounting", "accounting"), ST_opt("Finance", "finance"), ST_opt("Marketing", "marketing"), ST_opt("Management", "management"), ST_opt("Economics", "economics"), ST_opt("Other", "other")],
   health: [ST_opt("Nursing", "nursing"), ST_opt("Pre-med", "premed"), ST_opt("Public health", "public_health"), ST_opt("Psychology", "psychology"), ST_opt("Nutrition", "nutrition"), ST_opt("Other", "other")],
   arts: [ST_opt("Visual arts", "visual"), ST_opt("Music", "music"), ST_opt("Film", "film"), ST_opt("Theater", "theater"), ST_opt("Design", "design"), ST_opt("Other", "other")],
-  languages: [ST_opt("Spanish", "spanish"), ST_opt("French", "french"), ST_opt("Mandarin", "mandarin"), ST_opt("German", "german"), ST_opt("Japanese", "japanese"), ST_opt("Other", "other")],
-  test_prep: [ST_opt("SAT / ACT", "sat_act"), ST_opt("GRE / GMAT", "gre_gmat"), ST_opt("MCAT / LSAT", "mcat_lsat"), ST_opt("TOEFL / IELTS", "toefl_ielts"), ST_opt("AP exams", "ap"), ST_opt("Other", "other")],
 };
 
 const ST_STUDENTS_QUESTIONS: ST_Question[] = [
@@ -23893,10 +23890,10 @@ const ST_STUDENTS_QUESTIONS: ST_Question[] = [
   {
     id: "S2", layer: "who", title: "What subject area are you studying?", priority: 2,
     parts: [{ field: "subject", type: "single", options: [
-      ST_opt("Math", "math"), ST_opt("Science", "science"), ST_opt("Engineering", "engineering"),
+      ST_opt("Science", "science", "Biology, chemistry, physics, math, environmental"),
+      ST_opt("Engineering", "engineering", "Mechanical, electrical, civil, architecture, computer"),
       ST_opt("Computer Science", "cs"), ST_opt("Humanities", "humanities"), ST_opt("Business", "business"),
-      ST_opt("Health / Medical", "health"), ST_opt("Arts", "arts"), ST_opt("Languages", "languages"),
-      ST_opt("Test prep", "test_prep"),
+      ST_opt("Health / Medical", "health"), ST_opt("Arts", "arts"), ST_opt("Other", "other"),
     ]}],
     isRelevant: ST_always(),
   },
@@ -23984,10 +23981,13 @@ const ST_STUDENTS_QUESTIONS: ST_Question[] = [
   // ── Branch context: LL ──
   {
     id: "B1-LL", layer: "what", title: "Which language are you learning?", priority: 10,
+    hint: "Languages are grouped by the tools and platforms that work best for them.",
     parts: [{ field: "b1Ll", type: "single", options: [
-      ST_opt("Spanish", "spanish"), ST_opt("French", "french"), ST_opt("Mandarin", "mandarin"),
-      ST_opt("German", "german"), ST_opt("Japanese", "japanese"), ST_opt("Korean", "korean"),
-      ST_opt("Arabic", "arabic"), ST_opt("Other", "other"),
+      ST_opt("English / ESL", "english", "Widely supported on all major platforms"),
+      ST_opt("Spanish / French / German / Italian / Portuguese", "western_european", "Shared platforms — Duolingo, Babbel, Busuu, etc."),
+      ST_opt("Chinese / Japanese / Korean", "east_asian", "Specialized tools for characters, tones, and writing systems"),
+      ST_opt("Arabic / Urdu / Persian / Hebrew", "rtl_script", "Right-to-left script — specialized reading and writing tools"),
+      ST_opt("Hindi / Russian / Turkish / other", "other_major", "Growing platform support — some specialized tools"),
     ]}],
     isRelevant: ST_onFocus("ll"),
   },
@@ -24015,7 +24015,8 @@ const ST_STUDENTS_QUESTIONS: ST_Question[] = [
     hint: "This activates specific stages of your roadmap.",
     parts: [{ field: "b1Sd", type: "single", options: [
       ST_opt("Exploring options", "exploring"), ST_opt("Learning new skills", "learning"),
-      ST_opt("Getting certified", "certification"), ST_opt("Writing personal statements", "personal_statements"),
+      ST_opt("Getting certified", "certification"), ST_opt("Test / exam preparation", "test_prep", "SAT, GRE, GMAT, MCAT, LSAT, TOEFL, AP, etc."),
+      ST_opt("Writing personal statements", "personal_statements"),
       ST_opt("Building application materials", "application_materials"), ST_opt("Searching for jobs / internships", "searching"),
       ST_opt("Preparing for interviews", "interviews"), ST_opt("Negotiating offers", "negotiating"),
       ST_opt("Growing in current role", "advancing"),

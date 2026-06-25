@@ -7307,7 +7307,7 @@ const QUESTIONS: Question[] = [
     options: [
       { label: "Just starting out", value: "beginner" },
       { label: "I've used a few", value: "intermediate" },
-      { label: "I use AI every day", value: "advanced" },
+      { label: "I use AI regularly", value: "advanced" },
     ],
     priority: 70,
     isRelevant: (s) => !!s.specialty && !s.aiFamiliarity,
@@ -7317,7 +7317,7 @@ const QUESTIONS: Question[] = [
     layer: "how",
     field: "nicheFamiliarity",
     title: "How well do you know your topic?",
-    hint: "If you're new to it, we'll include real examples on every step.",
+    hint: "New here? We'll include real examples. Expert? We'll skip the basics.",
     type: "single",
     options: [
       { label: "New to it", value: "low" },
@@ -7331,13 +7331,13 @@ const QUESTIONS: Question[] = [
     id: "Q9",
     layer: "how",
     field: "handoffNeed",
-    title: "How much hand-holding between tools?",
-    hint: "How clearly should we tell you 'copy this from here → paste it into there'?",
+    title: "How much hand-holding do you want between tools?",
+    hint: "How clearly should we spell out 'copy this from here → paste it into there'?",
     type: "single",
     options: [
-      { label: "None — I'll figure it out", value: "low" },
-      { label: "A bit of guidance", value: "medium" },
-      { label: "Spell it out every step", value: "high" },
+      { label: "Walk me through everything", value: "high" },
+      { label: "Some guidance", value: "medium" },
+      { label: "Just point me to the tools", value: "low" },
     ],
     priority: 90,
     // Skippable if Advanced AND niche-expert (spec §8).
@@ -7354,9 +7354,9 @@ const QUESTIONS: Question[] = [
     hint: "This controls how every step in your roadmap looks.",
     type: "single",
     options: [
-      { label: "Just the action — keep it short", value: "short" },
-      { label: "Action + one quick tip", value: "balanced" },
-      { label: "Full detail — sub-steps + an example", value: "detailed" },
+      { label: "Quick overview", value: "short" },
+      { label: "Balanced", value: "balanced" },
+      { label: "Detailed with examples", value: "detailed" },
     ],
     priority: 100,
     isRelevant: (s) => !!s.specialty && !s.depth,
@@ -7369,14 +7369,14 @@ const QUESTIONS: Question[] = [
     id: "Q11",
     layer: "why",
     field: "budget",
-    title: "What's your budget — and how adventurous are you with tools?",
-    hint: "'Free' keeps recommendations free. 'Adventurous' lets us suggest newer, more powerful tools.",
+    title: "Budget and risk tolerance?",
+    hint: "'Free' keeps recommendations free. 'Proven' filters out newer, less tested tools.",
     type: "single",
     // Composite "budget|risk".
     options: [
-      { label: "Free only · stick with proven tools", value: "free|safe" },
-      { label: "Up to ~$25/month · a mix is fine", value: "low|mixed" },
-      { label: "Best tool wins · I'll try new things", value: "flexible|experimental" },
+      { label: "Free only · proven and trusted", value: "free|safe" },
+      { label: "Up to ~$25/month · open to trying new tools", value: "low|mixed" },
+      { label: "Flexible budget · open to trying new tools", value: "flexible|experimental" },
     ],
     priority: 110,
     isRelevant: (s) => !!s.specialty && !s.budget,
@@ -7390,12 +7390,12 @@ const QUESTIONS: Question[] = [
     id: "Q12",
     layer: "why",
     field: "qualityVsSpeed",
-    title: "What matters more — quality or speed?",
+    title: "Quality or speed?",
     hint: "Quality picks slower, sharper tools. Speed picks fast, good-enough ones.",
     type: "single",
     options: [
       { label: "Quality first", value: "quality" },
-      { label: "A balance of both", value: "balanced" },
+      { label: "Balanced", value: "balanced" },
       { label: "Speed first", value: "speed" },
     ],
     priority: 120,
@@ -7406,11 +7406,11 @@ const QUESTIONS: Question[] = [
     layer: "why",
     field: "stackPrefs",
     title: "What kind of tools do you prefer?",
-    hint: "Pick anything that matters to you. (Skip if you don't mind either way.)",
-    type: "multi",
+    hint: "Pick what matters most. Skip if you don't mind either way.",
+    type: "single",
     options: [
-      { label: "Familiar, well-known brands", value: "familiar" },
-      { label: "Open to brand-new tools", value: "new" },
+      { label: "Familiar, trusted brands", value: "familiar" },
+      { label: "Open to new tools", value: "new" },
       { label: "Easiest to learn", value: "easy" },
     ],
     priority: 130,
@@ -7444,6 +7444,21 @@ const QUESTIONS: Question[] = [
       }
     },
   } as Question,
+  {
+    id: "Q15",
+    layer: "why",
+    field: "toolSwitchPref",
+    title: "How do you feel about switching between different AI tools?",
+    hint: "No wrong answer. 'One tool' means we'll maximize what your main AI can do. 'Best tool' means we'll pick specialists even if it means learning new ones.",
+    type: "single",
+    options: [
+      { label: "I prefer sticking to one main tool for everything", value: "single" },
+      { label: "I'm open to specialists when they're clearly better", value: "open" },
+      { label: "Give me the best tool for every stage — I don't mind switching", value: "best" },
+    ],
+    priority: 150,
+    isRelevant: (s) => !!s.specialty && !s.toolSwitchPref,
+  },
 ];
 
 const BY_ID: Record<string, Question> = Object.fromEntries(QUESTIONS.map((q) => [q.id, q]));
@@ -7624,11 +7639,17 @@ function nicheMatchCount(tool: ToolProfile, niches: string[] = []): number {
  * tagged only for the primary (spec §4.4). The bonus is intentionally tiny so it
  * only ever breaks ties, never overrides the weighted signal.
  */
+const CC_GENERAL_LLM_NAMES = /^(chatgpt|claude|gemini|copilot|perplexity)/i;
+
 function computeToolScore(tool: ToolProfile, w: Weights, s: UserState): number {
   let score = 0;
   for (const k of WEIGHT_KEYS) score += tool.attr[k] * w[k];
   const matches = nicheMatchCount(tool, s.niches);
   if (matches > 0) score += matches * 0.25 * w.specialtyFit;
+  const w5 = (s as any).toolSwitchPref || "open";
+  const isLLM = CC_GENERAL_LLM_NAMES.test(tool.name);
+  if (w5 === "single" && isLLM) score += 2;
+  if (w5 === "best" && !isLLM) score += 1;
   return score;
 }
 
@@ -14183,7 +14204,7 @@ const H1: MarketingQuestion = {
       options: [
         opt("Just starting out", "starting_out"),
         opt("I've used a few", "used_a_few"),
-        opt("I use AI every day", "every_day"),
+        opt("I use AI regularly", "every_day"),
       ],
     },
   ],
@@ -14216,17 +14237,17 @@ const H3: MarketingQuestion = {
   id: "H3",
   layer: "how",
   priority: 62,
-  title: "How much hand-holding between tools?",
-  hint: "Want me to spell out the handoffs between tools, or trust you to figure them out?",
+  title: "How much hand-holding do you want between tools?",
+  hint: "How clearly should we spell out 'copy this from here → paste it into there'?",
   parts: [
     {
       label: "Hand-holding",
       field: "handhold",
       type: "single",
       options: [
-        opt("Spell every step out", "spell_out"),
-        opt("A bit of guidance", "some_guidance"),
-        opt("Just point me at the tool", "point_to_tool"),
+        opt("Walk me through everything", "spell_out"),
+        opt("Some guidance", "some_guidance"),
+        opt("Just point me to the tools", "point_to_tool"),
       ],
     },
   ],
@@ -14245,9 +14266,9 @@ const H4: MarketingQuestion = {
       field: "depth",
       type: "single",
       options: [
-        opt("Short", "short"),
+        opt("Quick overview", "short"),
         opt("Balanced", "balanced"),
-        opt("Detailed (with examples)", "detailed"),
+        opt("Detailed with examples", "detailed"),
       ],
     },
   ],
@@ -14266,19 +14287,19 @@ const W1: MarketingQuestion = {
   layer: "why",
   priority: 70,
   title: "Budget and risk tolerance?",
-  hint: "Free + safe means trusted free-tier tools only. Flexible + experimental opens the full catalog.",
+  hint: "'Free' keeps recommendations free. 'Proven' filters out newer, less tested tools.",
   parts: [
     {
       label: "Budget",
       field: "budget",
       type: "single",
-      options: [opt("Free only", "free"), opt("Flexible (paid OK)", "flexible")],
+      options: [opt("Free only", "free"), opt("Up to ~$25/month", "low"), opt("Flexible budget", "flexible")],
     },
     {
       label: "Risk tolerance",
       field: "riskTolerance",
       type: "single",
-      options: [opt("Safe / trusted", "safe"), opt("Experimental", "experimental")],
+      options: [opt("Proven and trusted", "safe"), opt("Open to trying new tools", "experimental")],
     },
   ],
   isRelevant: always,
@@ -14288,14 +14309,14 @@ const W2: MarketingQuestion = {
   id: "W2",
   layer: "why",
   priority: 71,
-  title: "Quality vs. speed?",
-  hint: "Both matter — pick the one you'd choose under pressure.",
+  title: "Quality or speed?",
+  hint: "Quality picks slower, sharper tools. Speed picks fast, good-enough ones.",
   parts: [
     {
       label: "Preference",
       field: "qualityVsSpeed",
       type: "single",
-      options: [opt("Quality", "quality"), opt("Balanced", "balanced"), opt("Speed", "speed")],
+      options: [opt("Quality first", "quality"), opt("Balanced", "balanced"), opt("Speed first", "speed")],
     },
   ],
   isRelevant: always,
@@ -14305,16 +14326,16 @@ const W3: MarketingQuestion = {
   id: "W3",
   layer: "why",
   priority: 72,
-  title: "Any tool preference?",
-  hint: "Soft preference — affects ranking, not eligibility.",
+  title: "What kind of tools do you prefer?",
+  hint: "Pick what matters most. Skip if you don't mind either way.",
   parts: [
     {
       label: "Preference",
       field: "toolPreference",
       type: "single",
       options: [
-        opt("Familiar, well-known brands", "familiar"),
-        opt("Open to brand-new tools", "new"),
+        opt("Familiar, trusted brands", "familiar"),
+        opt("Open to new tools", "new"),
         opt("Easiest to learn", "easiest"),
       ],
     },
@@ -14327,7 +14348,7 @@ const W4: MarketingQuestion = {
   layer: "why",
   priority: 73,
   title: "Where will you be using this?",
-  hint: "Paying-client work needs tools with commercial licensing — this hides the rest.",
+  hint: "If it's for a client, we'll only recommend commercially safe tools.",
   parts: [
     {
       label: "Usage context",
@@ -14337,6 +14358,27 @@ const W4: MarketingQuestion = {
         opt("Personal / hobby", "personal"),
         opt("For my own business", "own_business"),
         opt("For a paying client", "client_work"),
+      ],
+    },
+  ],
+  isRelevant: always,
+};
+
+const W5: MarketingQuestion = {
+  id: "W5",
+  layer: "why",
+  priority: 74,
+  title: "How do you feel about switching between different AI tools?",
+  hint: "No wrong answer. 'One tool' means we'll maximize what your main AI can do. 'Best tool' means we'll pick specialists even if it means learning new ones.",
+  parts: [
+    {
+      label: "Tool switching",
+      field: "toolSwitchPref",
+      type: "single",
+      options: [
+        opt("I prefer sticking to one main tool for everything", "single"),
+        opt("I'm open to specialists when they're clearly better", "open"),
+        opt("Give me the best tool for every stage — I don't mind switching", "best"),
       ],
     },
   ],
@@ -14357,7 +14399,7 @@ const MARKETING_QUESTIONS: MarketingQuestion[] = [
   AG_1, AG_2,
   SP, SP_B, SP_C,
   H1, H2, H3, H4,
-  W1, W2, W3, W4,
+  W1, W2, W3, W4, W5,
 ];
 
 /** Look up SP-b options for the user's current specialty (UI swaps these in). */
@@ -14580,6 +14622,8 @@ function applyHardFilters(
 }
 
 // ── 3. tool score (weighted dot product) ─────────────────────────────────────
+const MK_GENERAL_LLM_NAMES = /^(chatgpt|claude|gemini|copilot|perplexity)/i;
+
 function dot(tool: MarketingToolProfile, w: UserWeights): number {
   const a = tool.attr;
   return (
@@ -14631,14 +14675,21 @@ function rankStageTools(
     ({ pool, partialIds, fallback } = applyHardFilters(stagePool, a, true));
   }
 
-  const scored = pool.map((t) => ({
-    tool: t,
-    score: dot(t, weights),
-    rank: 0,
-    fallback,
-    licensingCaveat: partialIds.has(t.id),
-    why: whyThis(t, a),
-  }));
+  const w5 = (a as any).toolSwitchPref || "open";
+  const scored = pool.map((t) => {
+    let score = dot(t, weights);
+    const isLLM = MK_GENERAL_LLM_NAMES.test(t.name);
+    if (w5 === "single" && isLLM) score += 2;
+    if (w5 === "best" && !isLLM) score += 1;
+    return {
+      tool: t,
+      score,
+      rank: 0,
+      fallback,
+      licensingCaveat: partialIds.has(t.id),
+      why: whyThis(t, a),
+    };
+  });
   scored.sort((x, y) => y.score - x.score);
   scored.forEach((s, i) => (s.rank = i + 1));
   return scored.slice(0, topN);
@@ -18607,29 +18658,33 @@ const ED_EDUCATION_QUESTIONS: ED_Question[] = [
   // ── HOW layer ──
   {
     id: "H1", layer: "how", title: "How comfortable are you with AI tools?", priority: 30,
+    hint: "Be honest — this decides whether we start at basics or skip ahead.",
     parts: [{ field: "aiComfort", type: "single", options: [
-      ED_opt("Just starting", "just_starting"), ED_opt("Used a few", "used_a_few"), ED_opt("Every day", "every_day"),
+      ED_opt("Just starting out", "just_starting"), ED_opt("I've used a few", "used_a_few"), ED_opt("I use AI regularly", "every_day"),
     ]}],
     isRelevant: ED_always(),
   },
   {
     id: "H2", layer: "how", title: "How well do you know your topic?", priority: 31,
+    hint: "New here? We'll include real examples. Expert? We'll skip the basics.",
     parts: [{ field: "topicKnowledge", type: "single", options: [
-      ED_opt("New", "new"), ED_opt("Basics", "basics"), ED_opt("Expert", "expert"),
+      ED_opt("New to it", "new"), ED_opt("I know the basics", "basics"), ED_opt("I'm an expert", "expert"),
     ]}],
     isRelevant: ED_always(),
   },
   {
-    id: "H3", layer: "how", title: "How much hand-holding between tools?", priority: 32,
+    id: "H3", layer: "how", title: "How much hand-holding do you want between tools?", priority: 32,
+    hint: "How clearly should we spell out 'copy this from here → paste it into there'?",
     parts: [{ field: "handhold", type: "single", options: [
-      ED_opt("Spell it out", "spell_it_out"), ED_opt("Some guidance", "some_guidance"), ED_opt("Just the tool", "just_the_tool"),
+      ED_opt("Walk me through everything", "spell_it_out"), ED_opt("Some guidance", "some_guidance"), ED_opt("Just point me to the tools", "just_the_tool"),
     ]}],
     isRelevant: (a: any) => !(a.aiComfort === "every_day" && a.topicKnowledge === "expert"),
   },
   {
     id: "H4", layer: "how", title: "How detailed should each step be?", priority: 33,
+    hint: "This controls how every step in your roadmap looks.",
     parts: [{ field: "depth", type: "single", options: [
-      ED_opt("Short", "short"), ED_opt("Balanced", "balanced"), ED_opt("Detailed with examples", "detailed"),
+      ED_opt("Quick overview", "short"), ED_opt("Balanced", "balanced"), ED_opt("Detailed with examples", "detailed"),
     ]}],
     isRelevant: ED_always(),
     apply: (a: any, v: any) => {
@@ -18640,30 +18695,44 @@ const ED_EDUCATION_QUESTIONS: ED_Question[] = [
   // ── WHY layer ──
   {
     id: "W1", layer: "why", title: "Budget and risk tolerance?", priority: 40,
+    hint: "'Free' keeps recommendations free. 'Proven' filters out newer, less tested tools.",
     parts: [
-      { field: "budget", label: "Budget", type: "single", options: [ED_opt("Free", "free"), ED_opt("Flexible", "flexible")] },
-      { field: "riskTolerance", label: "Risk", type: "single", options: [ED_opt("Safe", "safe"), ED_opt("Experimental", "experimental")] },
+      { field: "budget", label: "Budget", type: "single", options: [ED_opt("Free only", "free"), ED_opt("Up to ~$25/month", "low"), ED_opt("Flexible budget", "flexible")] },
+      { field: "riskTolerance", label: "Risk", type: "single", options: [ED_opt("Proven and trusted", "safe"), ED_opt("Open to trying new tools", "experimental")] },
     ],
     isRelevant: ED_always(),
   },
   {
     id: "W2", layer: "why", title: "Quality or speed?", priority: 41,
+    hint: "Quality picks slower, sharper tools. Speed picks fast, good-enough ones.",
     parts: [{ field: "qualityVsSpeed", type: "single", options: [
-      ED_opt("Quality", "quality"), ED_opt("Balanced", "balanced"), ED_opt("Speed", "speed"),
+      ED_opt("Quality first", "quality"), ED_opt("Balanced", "balanced"), ED_opt("Speed first", "speed"),
     ]}],
     isRelevant: ED_always(),
   },
   {
-    id: "W3", layer: "why", title: "Tool preference?", priority: 42,
+    id: "W3", layer: "why", title: "What kind of tools do you prefer?", priority: 42,
+    hint: "Pick what matters most. Skip if you don't mind either way.",
     parts: [{ field: "toolPreference", type: "single", options: [
-      ED_opt("Familiar brands", "familiar"), ED_opt("New tools", "new_tools"), ED_opt("Easiest to learn", "easiest"),
+      ED_opt("Familiar, trusted brands", "familiar"), ED_opt("Open to new tools", "new_tools"), ED_opt("Easiest to learn", "easiest"),
     ]}],
     isRelevant: (a: any) => !(a.budget === "free" && a.riskTolerance === "safe"),
   },
   {
-    id: "W4", layer: "why", title: "Where will you use this?", priority: 43,
+    id: "W4", layer: "why", title: "Where will you be using this?", priority: 43,
+    hint: "If it's for a client, we'll only recommend commercially safe tools.",
     parts: [{ field: "usageContext", type: "single", options: [
-      ED_opt("Personal", "personal"), ED_opt("Own business", "own_business"), ED_opt("Paying client", "client_work"),
+      ED_opt("Personal / hobby", "personal"), ED_opt("For my own business", "own_business"), ED_opt("For a paying client", "client_work"),
+    ]}],
+    isRelevant: ED_always(),
+  },
+  {
+    id: "W5", layer: "why", title: "How do you feel about switching between different AI tools?", priority: 44,
+    hint: "No wrong answer. 'One tool' means we'll maximize what your main AI can do. 'Best tool' means we'll pick specialists even if it means learning new ones.",
+    parts: [{ field: "toolSwitchPref", type: "single", options: [
+      ED_opt("I prefer sticking to one main tool for everything", "single"),
+      ED_opt("I'm open to specialists when they're clearly better", "open"),
+      ED_opt("Give me the best tool for every stage — I don't mind switching", "best"),
     ]}],
     isRelevant: ED_always(),
   },
@@ -18783,17 +18852,26 @@ function ED_poolForStage(tools: ED_ToolProfile[], stageKey: string): ED_ToolProf
   return tools.filter(t => t.stage === stageKey || (stageKey !== sharedKey && t.stage === sharedKey));
 }
 
+const ED_GENERAL_LLM_NAMES = /^(chatgpt|claude|gemini|copilot|perplexity)/i;
+
 function ED_rankStageTools(pool: ED_ToolProfile[], answers: any, topN: number = 3): ED_ScoredTool[] {
   const weights = ED_deriveWeights(answers);
   const { filtered, fallback } = ED_applyHardFilters(pool, answers);
-  const scored = filtered.map(t => ({
-    tool: t,
-    score: ED_dot(t.attr, weights) + (t.trustScore || 0) * 0.5,
-    rank: 0,
-    why: t.exactTask,
-    fallback,
-    licensingCaveat: t.commercialLicensing === "partial",
-  }));
+  const w5 = answers.toolSwitchPref || "open";
+  const scored = filtered.map(t => {
+    let score = ED_dot(t.attr, weights) + (t.trustScore || 0) * 0.5;
+    const isLLM = ED_GENERAL_LLM_NAMES.test(t.name);
+    if (w5 === "single" && isLLM) score += 2;
+    if (w5 === "best" && !isLLM) score += 1;
+    return {
+      tool: t,
+      score,
+      rank: 0,
+      why: t.exactTask,
+      fallback,
+      licensingCaveat: t.commercialLicensing === "partial",
+    };
+  });
   scored.sort((a, b) => b.score - a.score);
   scored.forEach((s, i) => { s.rank = i + 1; });
   return scored.slice(0, topN);
@@ -18814,14 +18892,19 @@ function ED_buildHowComponents(stage: ED_Stage, tool: ED_ToolProfile, nextStage:
   };
 }
 
-function ED_renderHowText(components: any, depth: string): string {
+function ED_renderHowText(components: any, depth: string, answers?: any): string {
   if (!components) return "";
-  if (depth === "short") return `${components.context} ${components.action}`;
-  if (depth === "detailed") {
-    return [components.context, components.setup, components.inputs, components.action, components.output, components.handoff, components.watchOut, components.example]
+  let text: string;
+  if (depth === "short") text = `${components.context} ${components.action}`;
+  else if (depth === "detailed") {
+    text = [components.context, components.setup, components.inputs, components.action, components.output, components.handoff, components.watchOut, components.example]
       .filter(Boolean).join("\n\n");
+  } else {
+    text = [components.context, components.setup, components.action, components.handoff].filter(Boolean).join("\n\n");
   }
-  return [components.context, components.setup, components.action, components.handoff].filter(Boolean).join("\n\n");
+  if (answers?.toolSwitchPref === "single") text += "\n\nTip: You can do this step in your main AI tool instead of a specialist — ask it directly.";
+  if (answers?.toolSwitchPref === "best") text += "\n\nThis is a specialist tool picked for this exact stage — it'll outperform a general AI here.";
+  return text;
 }
 
 
@@ -24037,53 +24120,84 @@ const ST_STUDENTS_QUESTIONS: ST_Question[] = [
   // ── HOW layer ──
   {
     id: "H1", layer: "how", title: "How comfortable are you with AI tools?", priority: 30,
+    hint: "Be honest — this decides whether we start at basics or skip ahead.",
     parts: [{ field: "aiComfort", type: "single", options: [
-      ST_opt("Never used one", "never"), ST_opt("Tried a few", "tried_few"), ST_opt("Use regularly", "regular"),
+      ST_opt("Just starting out", "just_starting"), ST_opt("I've used a few", "used_a_few"), ST_opt("I use AI regularly", "regular"),
     ]}],
     isRelevant: ST_always(),
   },
   {
-    id: "H2", layer: "how", title: "How much guidance do you want?", priority: 31,
-    parts: [{ field: "guidance", type: "single", options: [
-      ST_opt("Walk me through everything", "full"), ST_opt("Some help", "some"), ST_opt("Just recommend tools", "minimal"),
+    id: "H2", layer: "how", title: "How well do you know your subject?", priority: 31,
+    hint: "New here? We'll include real examples. Confident? We'll skip the basics.",
+    parts: [{ field: "topicKnowledge", type: "single", options: [
+      ST_opt("New to it", "low"), ST_opt("I know the basics", "medium"), ST_opt("I'm confident in it", "high"),
     ]}],
     isRelevant: ST_always(),
   },
   {
-    id: "H3", layer: "how", title: "How detailed should each step be?", priority: 32,
+    id: "H3", layer: "how", title: "How much hand-holding do you want between tools?", priority: 32,
+    hint: "How clearly should we spell out 'copy this from here → paste it into there'?",
+    parts: [{ field: "handoffNeed", type: "single", options: [
+      ST_opt("Walk me through everything", "high"), ST_opt("Some guidance", "medium"), ST_opt("Just point me to the tools", "low"),
+    ]}],
+    isRelevant: (a: any) => !(a.aiComfort === "regular" && a.topicKnowledge === "high"),
+  },
+  {
+    id: "H4", layer: "how", title: "How detailed should each step be?", priority: 33,
+    hint: "This controls how every step in your roadmap looks.",
     parts: [{ field: "depth", type: "single", options: [
       ST_opt("Quick overview", "short"), ST_opt("Balanced", "balanced"), ST_opt("Detailed with examples", "detailed"),
     ]}],
     isRelevant: ST_always(),
+    apply: (a: any, v: any) => {
+      a.depth = v.depth;
+      a.examples = v.depth === "detailed";
+    },
   },
   // ── WHY layer ──
   {
-    id: "W1", layer: "why", title: "Budget for tools?", priority: 40,
-    parts: [{ field: "budget", type: "single", options: [
-      ST_opt("Free only", "free"), ST_opt("Student discount okay", "student_discount"), ST_opt("Flexible", "flexible"),
-    ]}],
+    id: "W1", layer: "why", title: "Budget and risk tolerance?", priority: 40,
+    hint: "'Free' keeps recommendations free. 'Proven' filters out newer, less tested tools.",
+    parts: [
+      { field: "budget", label: "Budget", type: "single", options: [ST_opt("Free only", "free"), ST_opt("Student discount okay", "student_discount"), ST_opt("Flexible budget", "flexible")] },
+      { field: "riskTolerance", label: "Risk", type: "single", options: [ST_opt("Proven and trusted", "safe"), ST_opt("Open to trying new tools", "experimental")] },
+    ],
     isRelevant: ST_always(),
   },
   {
     id: "W2", layer: "why", title: "Quality or speed?", priority: 41,
+    hint: "Quality picks slower, sharper tools. Speed picks fast, good-enough ones.",
     parts: [{ field: "qualityVsSpeed", type: "single", options: [
-      ST_opt("Best quality", "quality"), ST_opt("Balanced", "balanced"), ST_opt("Fastest", "speed"),
+      ST_opt("Quality first", "quality"), ST_opt("Balanced", "balanced"), ST_opt("Speed first", "speed"),
     ]}],
     isRelevant: ST_always(),
   },
   {
-    id: "W3", layer: "why", title: "Tool preference?", priority: 42,
+    id: "W3", layer: "why", title: "What kind of tools do you prefer?", priority: 42,
+    hint: "Pick what matters most. Skip if you don't mind either way.",
     parts: [{ field: "toolPref", type: "single", options: [
-      ST_opt("Popular / trusted", "popular"), ST_opt("New & innovative", "new"), ST_opt("Easiest to learn", "easiest"),
+      ST_opt("Familiar, trusted brands", "familiar"), ST_opt("Open to new tools", "new_tools"), ST_opt("Easiest to learn", "easiest"),
     ]}],
     isRelevant: ST_always(),
   },
   {
-    id: "W4", layer: "why", title: "Does your school or institution have an AI policy?", priority: 43,
-    hint: "This affects which tools we recommend.",
+    id: "W4", layer: "why", title: "How will you be using these AI tools?", priority: 43,
+    hint: "Personal projects have no restrictions. Graded work follows your institution's rules.",
     parts: [{ field: "aiPolicy", type: "single", options: [
-      ST_opt("No policy / don't know", "open"), ST_opt("AI allowed with disclosure", "disclosure"),
-      ST_opt("Restricted — only approved tools", "restricted"), ST_opt("No AI permitted", "no_ai"),
+      ST_opt("Personal learning or self-study", "personal"),
+      ST_opt("Graded coursework — AI encouraged or no policy", "encouraged"),
+      ST_opt("Graded coursework — AI allowed with disclosure", "disclosure"),
+      ST_opt("Graded coursework — AI restricted or prohibited", "restricted"),
+    ]}],
+    isRelevant: ST_always(),
+  },
+  {
+    id: "W5", layer: "why", title: "How do you feel about switching between different AI tools?", priority: 44,
+    hint: "No wrong answer. 'One tool' means we'll maximize what your main AI can do. 'Best tool' means we'll pick specialists even if it means learning new ones.",
+    parts: [{ field: "toolSwitchPref", type: "single", options: [
+      ST_opt("I prefer sticking to one main tool for everything", "single"),
+      ST_opt("I'm open to specialists when they're clearly better", "open"),
+      ST_opt("Give me the best tool for every stage — I don't mind switching", "best"),
     ]}],
     isRelevant: ST_always(),
   },
@@ -24164,17 +24278,21 @@ const ST_SHARED_STAGE_MAP: Record<string, string[]> = {
   "sd.build_materials": ["shared.writing_polish"],
 };
 
+const ST_GENERAL_LLM_NAMES = /^(chatgpt|claude|gemini|copilot|perplexity)/i;
+
 function ST_deriveWeights(answers: any): ST_ToolAttrs {
   const w: ST_ToolAttrs = { specialtyFit: 5, quality: 3, speed: 3, ease: 3, consistency: 3, cost: 3, trust: 3, stack: 3, risk: 3, format: 3 };
 
   if (answers.qualityVsSpeed === "quality") { w.quality = 5; w.speed = 1; }
   else if (answers.qualityVsSpeed === "speed") { w.quality = 1; w.speed = 5; }
 
-  if (answers.aiComfort === "never") { w.ease = 5; }
+  if (answers.aiComfort === "just_starting") { w.ease = 5; }
   else if (answers.aiComfort === "regular") { w.ease = 1; }
 
   if (answers.budget === "free") { w.cost = 5; }
-  if (answers.toolPref === "popular") { w.trust = 5; }
+  if (answers.riskTolerance === "safe") { w.risk = 5; w.trust = 5; }
+
+  if (answers.toolPref === "familiar") { w.trust = 5; }
   else if (answers.toolPref === "easiest") { w.ease = 5; }
 
   return w;
@@ -24223,11 +24341,16 @@ function ST_poolForStage(tools: ST_ToolProfile[], stageKey: string): ST_ToolProf
 function ST_rankStageTools(pool: ST_ToolProfile[], answers: any, topN: number = 3): ST_ScoredTool[] {
   const weights = ST_deriveWeights(answers);
   const { filtered, fallback } = ST_applyHardFilters(pool, answers);
+  const w5 = answers.toolSwitchPref || "open";
   const scored = filtered.map(t => {
     const x1Labels: Record<number, string> = { 1: "Does work for you", 2: "Generates content", 3: "Assists creation", 4: "Supports learning", 5: "Reference only" };
+    let score = ST_dot(t.attr, weights) + (t.trustScore || 0) * 0.5;
+    const isLLM = ST_GENERAL_LLM_NAMES.test(t.name);
+    if (w5 === "single" && isLLM) score += 2;
+    if (w5 === "best" && !isLLM) score += 1;
     return {
       tool: t,
-      score: ST_dot(t.attr, weights) + (t.trustScore || 0) * 0.5,
+      score,
       rank: 0,
       why: t.exactTask,
       fallback,
@@ -24254,14 +24377,19 @@ function ST_buildHowComponents(stage: ST_Stage, tool: ST_ToolProfile, nextStage:
   };
 }
 
-function ST_renderHowText(components: any, depth: string): string {
+function ST_renderHowText(components: any, depth: string, answers?: any): string {
   if (!components) return "";
-  if (depth === "short") return `${components.context} ${components.action}`;
-  if (depth === "detailed") {
-    return [components.context, components.setup, components.inputs, components.action, components.output, components.handoff, components.watchOut, components.x1Note]
+  let text: string;
+  if (depth === "short") text = `${components.context} ${components.action}`;
+  else if (depth === "detailed") {
+    text = [components.context, components.setup, components.inputs, components.action, components.output, components.handoff, components.watchOut, components.x1Note]
       .filter(Boolean).join("\n\n");
+  } else {
+    text = [components.context, components.setup, components.action, components.handoff].filter(Boolean).join("\n\n");
   }
-  return [components.context, components.setup, components.action, components.handoff].filter(Boolean).join("\n\n");
+  if (answers?.toolSwitchPref === "single") text += "\n\nTip: You can do this step in your main AI tool instead of a specialist — ask it directly.";
+  if (answers?.toolSwitchPref === "best") text += "\n\nThis is a specialist tool picked for this exact stage — it'll outperform a general AI here.";
+  return text;
 }
 
 
@@ -24330,11 +24458,11 @@ The X1 label on each tool indicates how much work it does for you — pay attent
 const ST_ADVISORY_FOOTNOTE = "This roadmap is for educational guidance only. Always follow your institution's academic integrity policies.";
 
 function ST_buildAdvisory(answers: any): { text: string; footnote: string } | null {
-  if (answers.aiPolicy === "no_ai") {
-    return {
-      text: "**Your institution does not permit AI tools for academic work.** This roadmap is for personal learning reference only. Do not use these tools for graded assignments.",
-      footnote: ST_ADVISORY_FOOTNOTE,
-    };
+  if (answers.aiPolicy === "personal") {
+    return null;
+  }
+  if (answers.aiPolicy === "encouraged") {
+    return { text: "AI tools are encouraged or unrestricted at your institution. Use them freely, but always learn the underlying material — the tools are there to accelerate your learning, not replace it.", footnote: ST_ADVISORY_FOOTNOTE };
   }
   if (answers.aiPolicy === "restricted") {
     return {
@@ -24970,8 +25098,14 @@ function Home({ onStart, onExplore }: any) {
 }
 
 function ExplorePage({ onStart }: any) {
-  const [mod, setMod] = useState<"cc" | "mk">("cc");
+  const [mod, setMod] = useState<"cc" | "mk" | "ed" | "st">("cc");
   const [query, setQuery] = useState("");
+  const placeholders: Record<string, string> = {
+    cc: "Search 167 tools — name, category, or what it does…",
+    mk: "Search 67 tools — try \"claude\", \"video\", or \"seo\"…",
+    ed: "Search education tools — try \"lms\", \"assessment\", or \"differentiate\"…",
+    st: "Search student tools — try \"flashcard\", \"citation\", or \"tutor\"…",
+  };
   return (
     <>
       <section className="fg-explore-hero">
@@ -24981,9 +25115,11 @@ function ExplorePage({ onStart }: any) {
           Tap any tool to see exactly what it does, who it's for, and where it fits in your workflow.
           Or skip the browse — let FlowGenix pick the right ones for your goal.
         </p>
-        <div style={{ display: "flex", gap: "8px", justifyContent: "center", marginBottom: "18px" }}>
+        <div style={{ display: "flex", gap: "8px", justifyContent: "center", marginBottom: "18px", flexWrap: "wrap" }}>
           <button className={`fg-field-chip ${mod === "cc" ? "live" : ""}`} style={{ cursor: "pointer", border: "none" }} onClick={() => { setMod("cc"); setQuery(""); }}>Content Creator</button>
           <button className={`fg-field-chip ${mod === "mk" ? "live" : ""}`} style={{ cursor: "pointer", border: "none" }} onClick={() => { setMod("mk"); setQuery(""); }}>Marketing</button>
+          <button className={`fg-field-chip ${mod === "ed" ? "live" : ""}`} style={{ cursor: "pointer", border: "none" }} onClick={() => { setMod("ed"); setQuery(""); }}>Education</button>
+          <button className={`fg-field-chip ${mod === "st" ? "live" : ""}`} style={{ cursor: "pointer", border: "none" }} onClick={() => { setMod("st"); setQuery(""); }}>Students</button>
         </div>
         <div className="fg-search-wrap">
           <span className="fg-search-icon" aria-hidden>⌕</span>
@@ -24992,7 +25128,7 @@ function ExplorePage({ onStart }: any) {
             type="search"
             value={query}
             onChange={(e: any) => setQuery(e.target.value)}
-            placeholder={mod === "cc" ? "Search 167 tools — name, category, or what it does…" : "Search 67 tools — try \"claude\", \"video\", or \"seo\"…"}
+            placeholder={placeholders[mod]}
             aria-label="Search tools"
           />
           {query && (
@@ -25001,7 +25137,10 @@ function ExplorePage({ onStart }: any) {
         </div>
         <button className="fg-btn-primary" onClick={onStart} style={{ marginTop: "18px" }}>Get my personal roadmap →</button>
       </section>
-      {mod === "cc" ? <ToolShowcase query={query} /> : <MarketingToolShowcase query={query} />}
+      {mod === "cc" && <ToolShowcase query={query} />}
+      {mod === "mk" && <MarketingToolShowcase query={query} />}
+      {mod === "ed" && <EducationToolShowcase query={query} />}
+      {mod === "st" && <StudentsToolShowcase query={query} />}
     </>
   );
 }
@@ -26771,6 +26910,70 @@ function MarketingToolModal({ tool, onClose }: any) {
         {tool.toolUrl && <a className="fg-btn-primary" href={tool.toolUrl} target="_blank" rel="noopener" style={{ display: "inline-block", marginTop: "16px" }}>Open {tool.name} ↗</a>}
       </div>
     </div>
+  );
+}
+
+function EducationToolShowcase({ query }: { query: string }) {
+  const [active, setActive] = useState<any | null>(null);
+  if (!_ED || !_ED.ED_TOOL_PROFILES) return <p className="fg-sec-sub" style={{ textAlign: "center", padding: "40px 0" }}>Education tools coming soon.</p>;
+  const byName: Record<string, any> = {};
+  for (const t of _ED.ED_TOOL_PROFILES as any[]) {
+    const cur = byName[t.name];
+    if (!cur) byName[t.name] = { ...t };
+    else if (t.trustScore > cur.trustScore) Object.assign(cur, t);
+  }
+  const all = Object.values(byName) as any[];
+  const q = (query || "").trim().toLowerCase();
+  const filtered = q ? all.filter((t: any) => t.name.toLowerCase().includes(q) || (t.category || "").toLowerCase().includes(q) || (t.exactTask || "").toLowerCase().includes(q)) : all;
+  return (
+    <section className="fg-tools" id="tools">
+      <div className="fg-sec-eyebrow">Education tool universe</div>
+      <h2 className="fg-sec-h">{all.length} education AI tools</h2>
+      <div className="fg-tool-grid">
+        {filtered.sort((a: any, b: any) => b.trustScore - a.trustScore || a.name.localeCompare(b.name)).map((t: any) => (
+          <button key={t.id} className="fg-tool-card" onClick={() => setActive(t)}>
+            <div className="fg-tool-top"><span className="fg-tool-cat">{t.category}</span><Stars score={t.trustScore} /></div>
+            <div className="fg-tool-name">{t.name}</div>
+            <div className="fg-tool-task">{t.exactTask}</div>
+            <div className="fg-tool-foot"><span className="fg-tool-price">{t.startingPrice || "—"}</span></div>
+          </button>
+        ))}
+      </div>
+      {filtered.length === 0 && <p className="fg-sec-sub" style={{ textAlign: "center", padding: "40px 0" }}>No tools match "{query}".</p>}
+      {active && <MarketingToolModal tool={active} onClose={() => setActive(null)} />}
+    </section>
+  );
+}
+
+function StudentsToolShowcase({ query }: { query: string }) {
+  const [active, setActive] = useState<any | null>(null);
+  if (!_ST || !_ST.ST_TOOL_PROFILES) return <p className="fg-sec-sub" style={{ textAlign: "center", padding: "40px 0" }}>Student tools coming soon.</p>;
+  const byName: Record<string, any> = {};
+  for (const t of _ST.ST_TOOL_PROFILES as any[]) {
+    const cur = byName[t.name];
+    if (!cur) byName[t.name] = { ...t };
+    else if (t.trustScore > cur.trustScore) Object.assign(cur, t);
+  }
+  const all = Object.values(byName) as any[];
+  const q = (query || "").trim().toLowerCase();
+  const filtered = q ? all.filter((t: any) => t.name.toLowerCase().includes(q) || (t.category || "").toLowerCase().includes(q) || (t.exactTask || "").toLowerCase().includes(q)) : all;
+  return (
+    <section className="fg-tools" id="tools">
+      <div className="fg-sec-eyebrow">Student tool universe</div>
+      <h2 className="fg-sec-h">{all.length} student AI tools</h2>
+      <div className="fg-tool-grid">
+        {filtered.sort((a: any, b: any) => b.trustScore - a.trustScore || a.name.localeCompare(b.name)).map((t: any) => (
+          <button key={t.id} className="fg-tool-card" onClick={() => setActive(t)}>
+            <div className="fg-tool-top"><span className="fg-tool-cat">{t.category}</span><Stars score={t.trustScore} /></div>
+            <div className="fg-tool-name">{t.name}</div>
+            <div className="fg-tool-task">{t.exactTask}</div>
+            <div className="fg-tool-foot"><span className="fg-tool-price">{t.startingPrice || "—"}</span></div>
+          </button>
+        ))}
+      </div>
+      {filtered.length === 0 && <p className="fg-sec-sub" style={{ textAlign: "center", padding: "40px 0" }}>No tools match "{query}".</p>}
+      {active && <MarketingToolModal tool={active} onClose={() => setActive(null)} />}
+    </section>
   );
 }
 

@@ -18385,11 +18385,12 @@ function ED_applyImprovePath(stages: ED_Stage[], answers: any): ED_Stage[] {
 
 function ED_applyRepurposePath(stages: ED_Stage[], answers: any): ED_Stage[] {
   if (stages.length < 3) return stages;
+  const createStage = stages.find(s => s.toolCategory === "Content Generation" || s.toolCategory === "Authoring" || s.toolCategory === "Item Generation" || s.toolCategory === "Academic Writing") || stages[1];
   const header: ED_Stage = {
-    key: stages[0].key,
+    key: createStage.key,
     label: "Transform Source",
     goal: "Extract, adapt, and produce new content from existing materials.",
-    toolCategory: "Transformation",
+    toolCategory: createStage.toolCategory,
   };
   return [header, ...stages.slice(1)];
 }
@@ -18411,7 +18412,9 @@ function ED_buildHeaderChips(answers: any): string[] {
   return chips;
 }
 
-function ED_shouldShowDisclosure(_answers: any): boolean {
+function ED_shouldShowDisclosure(answers: any): boolean {
+  if (answers.orgType === "k12") return true;
+  if (answers.learners === "children" || answers.learners === "adolescents") return true;
   return false;
 }
 
@@ -18665,8 +18668,8 @@ const ED_EDUCATION_QUESTIONS: ED_Question[] = [
     isRelevant: ED_always(),
   },
   {
-    id: "H2", layer: "how", title: "How well do you know your topic?", priority: 31,
-    hint: "New here? We'll include real examples. Expert? We'll skip the basics.",
+    id: "H2", layer: "how", title: "How experienced are you in this area of education work?", priority: 31,
+    hint: "This is about your specialty above, not your subject. New to assessment design? Or a veteran?",
     parts: [{ field: "topicKnowledge", type: "single", options: [
       ED_opt("New to it", "new"), ED_opt("I know the basics", "basics"), ED_opt("I'm an expert", "expert"),
     ]}],
@@ -18720,9 +18723,9 @@ const ED_EDUCATION_QUESTIONS: ED_Question[] = [
   },
   {
     id: "W4", layer: "why", title: "Where will you be using this?", priority: 43,
-    hint: "If it's for a client, we'll only recommend commercially safe tools.",
+    hint: "This protects you from commercial licensing issues.",
     parts: [{ field: "usageContext", type: "single", options: [
-      ED_opt("Personal / hobby", "personal"), ED_opt("For my own business", "own_business"), ED_opt("For a paying client", "client_work"),
+      ED_opt("Personal use — not for publishing", "personal"), ED_opt("For my own business or freelance work", "own_business"), ED_opt("For an institution or paying client", "client_work"),
     ]}],
     isRelevant: ED_always(),
   },
@@ -18748,22 +18751,23 @@ function ED_isQuestionAnswered(q: ED_Question, answers: any): boolean {
 }
 
 function ED_nextQuestion(answers: any): ED_Question | null {
-  // Family-aware option patching for E1b
-  const e1bQ = ED_EDUCATION_QUESTIONS.find(q => q.id === "E1b")!;
-  if (answers.orgType === "k12") {
-    e1bQ.title = "What type of K-12?";
-    e1bQ.parts = [{ field: "orgSubType", type: "single", options: [ED_opt("Public", "public"), ED_opt("Private", "private")] }];
-  } else if (answers.orgType === "higher_ed") {
-    e1bQ.title = "What type of higher education?";
-    e1bQ.parts = [{ field: "orgSubType", type: "single", options: [
-      ED_opt("Research university", "research"), ED_opt("Teaching university", "teaching"), ED_opt("Community college", "community_college"),
-    ]}];
-  }
-
   const sorted = [...ED_EDUCATION_QUESTIONS].sort((a, b) => a.priority - b.priority);
   for (const q of sorted) {
     if (!q.isRelevant(answers)) continue;
     if (ED_isQuestionAnswered(q, answers)) continue;
+    if (q.id === "E1b") {
+      const copy = { ...q };
+      if (answers.orgType === "k12") {
+        copy.title = "What type of K-12?";
+        copy.parts = [{ field: "orgSubType", type: "single", options: [ED_opt("Public", "public"), ED_opt("Private", "private")] }];
+      } else if (answers.orgType === "higher_ed") {
+        copy.title = "What type of higher education?";
+        copy.parts = [{ field: "orgSubType", type: "single", options: [
+          ED_opt("Research university", "research"), ED_opt("Teaching university", "teaching"), ED_opt("Community college", "community_college"),
+        ]}];
+      }
+      return copy;
+    }
     return q;
   }
   return null;
@@ -18828,8 +18832,9 @@ function ED_applyHardFilters(tools: ED_ToolProfile[], answers: any): { filtered:
     pool = pool.filter(t => t.commercialLicensing !== "no");
   }
 
-  // X1 compliance filter: K-12 or higher-ed serving children
-  const needsCompliance = answers.orgType === "k12" || (answers.orgType === "higher_ed" && answers.learners === "children");
+  // X1 compliance filter: K-12 with minors, or higher-ed serving children
+  const hasMinors = answers.learners === "children" || answers.learners === "adolescents" || answers.learners === "mixed";
+  const needsCompliance = (answers.orgType === "k12" && hasMinors) || (answers.orgType === "higher_ed" && answers.learners === "children");
   if (needsCompliance) {
     pool = pool.filter(t => t.x1ComplianceReady >= 3);
   }
@@ -18845,11 +18850,14 @@ function ED_dot(toolAttrs: ED_ToolAttrs, weights: ED_ToolAttrs): number {
   return sum;
 }
 
+const ED_SHARED_STAGE_MAP: Record<string, string> = {
+  "cd.review_polish": "shared.review_polish",
+  "arp.review_polish": "shared.review_polish",
+};
+
 function ED_poolForStage(tools: ED_ToolProfile[], stageKey: string): ED_ToolProfile[] {
-  const parts = stageKey.split(".");
-  const slug = parts.length > 1 ? parts[1] : "";
-  const sharedKey = "shared." + slug;
-  return tools.filter(t => t.stage === stageKey || (stageKey !== sharedKey && t.stage === sharedKey));
+  const alsoCheck = ED_SHARED_STAGE_MAP[stageKey];
+  return tools.filter(t => t.stage === stageKey || (alsoCheck && t.stage === alsoCheck));
 }
 
 const ED_GENERAL_LLM_NAMES = /^(chatgpt|claude|gemini|copilot|perplexity)/i;
@@ -18941,10 +18949,11 @@ function ED_buildQuickStart(answers: any, firstStage: ED_Stage): string[] {
 function ED_buildToolPrompt(stage: ED_Stage, tool: ED_ToolProfile, answers: any): string {
   const sp = answers.specialty as ED_Specialty;
   const org = answers.orgType || "education";
-  const subject = answers.subject || "your subject";
-  return `I'm a${org === "k12" ? " K-12" : org === "higher_ed" ? " higher education" : "n"} educator working in ${ED_SPECIALTY_LABEL[sp] || sp}. ` +
+  const subject = answers.subject;
+  const orgLabel = org === "k12" ? " K-12" : org === "higher_ed" ? " higher education" : org === "corporate" ? " corporate" : "n";
+  return `I'm a${orgLabel} educator working in ${ED_SPECIALTY_LABEL[sp] || sp}. ` +
     `I'm at the "${stage.label}" stage of my workflow. ` +
-    `My subject area is ${subject}. ` +
+    (subject ? `My subject area is ${subject}. ` : "") +
     `I need to: ${stage.goal} ` +
     `Please help me ${tool.exactTask.toLowerCase()}`;
 }
@@ -18959,8 +18968,18 @@ function ED_prefillFormat(_answers: any): any[] { return []; }
 
 
 /* ===== src/education/disclosure.ts ===== */
-const ED_DISCLOSURE_TEXT = "";
-const ED_DISCLOSURE_FOOTNOTE = "";
+const ED_DISCLOSURE_TEXT = `**Data Privacy Advisory for Educators**
+
+Before using any AI tool with student information:
+
+1. **Check your institution's data policies.** Many schools and districts require approval before using third-party AI tools with student data.
+2. **Never upload identifiable student data** (names, grades, IDs) to AI tools unless your institution has a signed data processing agreement with that vendor.
+3. **FERPA / COPPA compliance matters.** If you work with minors, verify that any tool you use meets federal and state privacy requirements.
+4. **Use anonymized or sample data** when exploring new tools. Test with fake names and dummy scores before using real student information.
+
+The X1 compliance label on each tool indicates its readiness for use in regulated education settings.`;
+
+const ED_DISCLOSURE_FOOTNOTE = "This roadmap is for guidance only. Always follow your institution's data privacy and AI usage policies.";
 
 return { ED_determineStages, ED_buildHeaderChips, ED_nextQuestion, ED_isQuestionAnswered, ED_EDUCATION_QUESTIONS, ED_spBreakdownOptions, ED_spRepurposeOptions, ED_activeChips, ED_deriveWeights, ED_rankStageTools, ED_poolForStage, ED_buildHowComponents, ED_renderHowText, ED_buildStrategyBrief, ED_buildQuickStart, ED_buildToolPrompt, ED_buildCpRender, ED_prefillFormat, ED_shouldShowDisclosure, ED_DISCLOSURE_TEXT, ED_DISCLOSURE_FOOTNOTE, ED_TOOL_PROFILES, ED_basePipeline, ED_SPECIALTY_LABEL, ED_ORG_LABEL };
 })();
@@ -24697,6 +24716,11 @@ function App() {
     if (!q) return;
     const next = { ...edAnswers };
     for (const p of q.parts) delete next[p.field];
+    if (qid === "E1") { delete next.orgSubType; delete next.subject; delete next.learners; }
+    if (qid === "ES") {
+      const branchFields = ["b1Cld","b2Cld","b3Cld","b1Idl","b2Idl","b1Ag","b2Ag","b1Cd","b2Cd","b1Arp","b2Arp","b1Tpl","b2Tpl","breakdownStage","sourceAsset"];
+      for (const f of branchFields) delete next[f];
+    }
     setEdAnswers(next);
   }
 
@@ -24852,13 +24876,13 @@ function App() {
         <MarketingRoadmap answers={mkAnswers} onRestart={() => setView("fields")} />
       )}
       {view === "edquiz" && (
-        <EducationQuiz current={edCurrent} answers={edAnswers} onSubmit={edSubmit} onBack={edBack} onEditChip={edEditChip} />
+        <EducationQuiz current={edCurrent} answers={edAnswers} onSubmit={edSubmit} onBack={edBack} onEditChip={edEditChip} onRestart={startEducation} />
       )}
       {view === "edroadmap" && (
         <EducationRoadmap answers={edAnswers} onRestart={() => setView("fields")} />
       )}
       {view === "stquiz" && (
-        <StudentsQuiz current={stCurrent} answers={stAnswers} onSubmit={stSubmit} onBack={stBack} onEditChip={stEditChip} />
+        <StudentsQuiz current={stCurrent} answers={stAnswers} onSubmit={stSubmit} onBack={stBack} onEditChip={stEditChip} onRestart={startStudents} />
       )}
       {view === "stroadmap" && (
         <StudentsRoadmap answers={stAnswers} onRestart={() => setView("fields")} />
@@ -26180,7 +26204,7 @@ function MarketingRoadmap({ answers, onRestart }: any) {
       )}
 
       {assumed.length > 0 && (
-        <div className="fg-fallback">✓ Assumed working: {assumed.map((s: any) => s.label).join(" · ")} — we start your detailed plan at the step that needs fixing.</div>
+        <div className="fg-fallback">✓ Assumed working: {assumed.map((s: any) => s.label).join(" · ")} — we start your detailed plan at the step that needs fixing. <span style={{opacity:0.7,fontSize:"0.9em"}}>If you'd like to review those stages too, draw a new map with "Create" instead.</span></div>
       )}
 
       <div className="fg-path-h">{steps.length} steps · tap a star to open it</div>
@@ -26301,7 +26325,7 @@ const ED_LAYER_LABEL: Record<string, string> = {
   why: "Choosing the right tools",
 };
 
-function EducationQuiz({ current, answers, onSubmit, onBack, onEditChip }: any) {
+function EducationQuiz({ current, answers, onSubmit, onBack, onEditChip, onRestart }: any) {
   const [picks, setPicks] = useState<Record<string, any>>({});
   useEffect(() => { setPicks({}); }, [current?.id]);
   if (!current || !_ED) return null;
@@ -26396,6 +26420,9 @@ function EducationQuiz({ current, answers, onSubmit, onBack, onEditChip }: any) 
             <button className="fg-btn-back" onClick={onBack}>← Back</button>
             <button className="fg-btn-primary" disabled={!ready} onClick={() => onSubmit(picks)}>Continue →</button>
           </div>
+          {Object.keys(answers).length > 2 && (
+            <button className="fg-btn-ghost" onClick={onRestart} style={{ marginTop: "8px", fontSize: "12px", opacity: 0.6 }}>↻ Start over</button>
+          )}
         </div>
       </div>
     </section>
@@ -26421,7 +26448,7 @@ function EducationRoadmap({ answers, onRestart }: any) {
     const pool = _ED.ED_poolForStage(_ED.ED_TOOL_PROFILES, stage.key);
     const ranked = _ED.ED_rankStageTools(pool, answers);
     const top = ranked[0] ? ranked[0].tool : null;
-    const how = top ? _ED.ED_renderHowText(_ED.ED_buildHowComponents(stage, top, active[i + 1] || null, answers), answers.depth) : "";
+    const how = top ? _ED.ED_renderHowText(_ED.ED_buildHowComponents(stage, top, active[i + 1] || null, answers), answers.depth, answers) : "";
     const prompt = top ? _ED.ED_buildToolPrompt(stage, top, answers) : "";
     return { stage, ranked, top, how, prompt, order: i + 1 };
   });
@@ -26455,7 +26482,7 @@ function EducationRoadmap({ answers, onRestart }: any) {
       )}
 
       {assumed.length > 0 && (
-        <div className="fg-fallback">✓ Assumed working: {assumed.map((s: any) => s.label).join(" · ")} — we start your detailed plan at the step that needs fixing.</div>
+        <div className="fg-fallback">✓ Assumed working: {assumed.map((s: any) => s.label).join(" · ")} — we start your detailed plan at the step that needs fixing. <span style={{opacity:0.7,fontSize:"0.9em"}}>If you'd like to review those stages too, draw a new map with "Create" instead.</span></div>
       )}
 
       <div className="fg-path-h">{steps.length} steps · tap a star to open it</div>
@@ -26473,6 +26500,13 @@ function EducationRoadmap({ answers, onRestart }: any) {
           />
         ))}
       </div>
+
+      {_ED.ED_shouldShowDisclosure(answers) && _ED.ED_DISCLOSURE_TEXT && (
+        <div className="fg-ai-error" style={{ borderColor: "#5C3B0F" }}>
+          <div style={{ whiteSpace: "pre-line" }}>{_ED.ED_DISCLOSURE_TEXT}</div>
+          <span className="fg-ai-error-msg">{_ED.ED_DISCLOSURE_FOOTNOTE}</span>
+        </div>
+      )}
 
       <div className="fg-rm-foot">
         <button className="fg-btn-ghost" onClick={onRestart}>↻ Draw a new map</button>
@@ -26547,7 +26581,7 @@ const ST_LAYER_LABEL: Record<string, string> = {
   why: "Your constraints",
 };
 
-function StudentsQuiz({ current, answers, onSubmit, onBack, onEditChip }: any) {
+function StudentsQuiz({ current, answers, onSubmit, onBack, onEditChip, onRestart }: any) {
   const [picks, setPicks] = useState<Record<string, any>>({});
   useEffect(() => { setPicks({}); }, [current?.id]);
   if (!current || !_ST) return null;
@@ -26639,6 +26673,9 @@ function StudentsQuiz({ current, answers, onSubmit, onBack, onEditChip }: any) {
             <button className="fg-btn-back" onClick={onBack}>← Back</button>
             <button className="fg-btn-primary" disabled={!ready} onClick={() => onSubmit(picks)}>Continue →</button>
           </div>
+          {Object.keys(answers).length > 2 && (
+            <button className="fg-btn-ghost" onClick={onRestart} style={{ marginTop: "8px", fontSize: "12px", opacity: 0.6 }}>↻ Start over</button>
+          )}
         </div>
       </div>
     </section>
@@ -26665,7 +26702,7 @@ function StudentsRoadmap({ answers, onRestart }: any) {
     const pool = _ST.ST_poolForStage(_ST.ST_TOOL_PROFILES, stage.key);
     const ranked = _ST.ST_rankStageTools(pool, answers);
     const top = ranked[0] ? ranked[0].tool : null;
-    const how = top ? _ST.ST_renderHowText(_ST.ST_buildHowComponents(stage, top, active[i + 1] || null, answers), answers.depth) : "";
+    const how = top ? _ST.ST_renderHowText(_ST.ST_buildHowComponents(stage, top, active[i + 1] || null, answers), answers.depth, answers) : "";
     const prompt = top ? _ST.ST_buildToolPrompt(stage, top, answers) : "";
     return { stage, ranked, top, how, prompt, order: i + 1 };
   });
@@ -26699,7 +26736,7 @@ function StudentsRoadmap({ answers, onRestart }: any) {
       )}
 
       {assumed.length > 0 && (
-        <div className="fg-fallback">✓ Assumed working: {assumed.map((s: any) => s.label).join(" · ")} — we start your detailed plan at the step that needs fixing.</div>
+        <div className="fg-fallback">✓ Assumed working: {assumed.map((s: any) => s.label).join(" · ")} — we start your detailed plan at the step that needs fixing. <span style={{opacity:0.7,fontSize:"0.9em"}}>If you'd like to review those stages too, draw a new map with "Create" instead.</span></div>
       )}
 
       <div className="fg-path-h">{steps.length} steps · tap a star to open it</div>

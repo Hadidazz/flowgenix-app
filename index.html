@@ -7581,7 +7581,7 @@ function deriveWeights(s: UserState, memory: WeightMemory = {}): Weights {
   else if (s.riskTolerance === "experimental") w.risk *= 0.75;
 
   // W7 trust / W8 stack (Q13).
-  const stack = s.stackPrefs ?? [];
+  const stack = typeof s.stackPrefs === "string" ? [s.stackPrefs] : (s.stackPrefs ?? []);
   if (stack.includes("familiar")) w.trust *= 1.4;
   if (stack.includes("owned")) {
     w.stack *= 1.4;
@@ -7656,6 +7656,7 @@ function computeToolScore(tool: ToolProfile, w: Weights, s: UserState): number {
 interface FilteredPool {
   tools: ToolProfile[];
   fallback: boolean;
+  appliedFilters: string[];
 }
 
 /**
@@ -7670,13 +7671,14 @@ function filterEligibleTools(stage: StageKey, s: UserState): FilteredPool {
   const raw = TOOL_PROFILES.filter((t) => t.stage === sourceStage);
 
   let pool = raw;
-  if (s.budget === "free") pool = pool.filter((t) => t.attr.cost >= 4);
-  if (s.commercialUse === "high") pool = pool.filter((t) => t.riskLevel <= 3);
+  const appliedFilters: string[] = [];
+  if (s.budget === "free") { pool = pool.filter((t) => t.attr.cost >= 4); appliedFilters.push("Free tools only"); }
+  if (s.commercialUse === "high") { pool = pool.filter((t) => t.riskLevel <= 3); appliedFilters.push("Commercial-safe only"); }
 
   if (pool.length === 0 && raw.length > 0) {
-    return { tools: raw, fallback: true };
+    return { tools: raw, fallback: true, appliedFilters };
   }
-  return { tools: pool, fallback: false };
+  return { tools: pool, fallback: false, appliedFilters };
 }
 
 /** One-line "why this tool" for the roadmap card, citing what aligns with the user. */
@@ -7687,18 +7689,23 @@ function buildWhy(tool: ToolProfile, s: UserState): string {
   if (s.qualityVsSpeed === "speed" && a.speed >= 4) reasons.push("fast turnaround");
   if (s.budget === "free" && a.cost >= 4) reasons.push("a genuinely usable free tier");
   if (s.riskTolerance === "safe" && tool.trustScore >= 4) reasons.push("a proven, trusted track record");
-  if ((s.stackPrefs ?? []).includes("easy") && a.ease >= 4) reasons.push("a shallow learning curve");
+  const stack = typeof s.stackPrefs === "string" ? [s.stackPrefs] : (s.stackPrefs ?? []);
+  if (stack.includes("easy") && a.ease >= 4) reasons.push("a shallow learning curve");
   if (s.commercialUse === "high" && tool.riskLevel <= 2) reasons.push("commercial-safe licensing");
   if ((s.outputReqs ?? []).includes("consistent") && a.consistency >= 4) reasons.push("reliably consistent results");
   if (reasons.length === 0 && tool.exactTask) {
     return `${tool.name} — best overall fit here: ${tool.exactTask.toLowerCase()}.`;
   }
-  return `${tool.name} fits because it offers ${reasons.slice(0, 3).join(", ")}.`;
+  let line = `${tool.name} fits because it offers ${reasons.slice(0, 3).join(", ")}.`;
+  if (s.commercialUse === "medium" && tool.riskLevel > 3) {
+    line += " ⚠️ Check this tool's license before using for business.";
+  }
+  return line;
 }
 
 /** Filter → score → rank the top 3 tools for one stage. */
 function scoreStage(stage: StageKey, s: UserState, w: Weights): ScoredTool[] {
-  const { tools, fallback } = filterEligibleTools(stage, s);
+  const { tools, fallback, appliedFilters } = filterEligibleTools(stage, s);
   return tools
     .map((tool) => ({ tool, score: computeToolScore(tool, w, s) }))
     .sort((a, b) => b.score - a.score)
@@ -7708,6 +7715,7 @@ function scoreStage(stage: StageKey, s: UserState, w: Weights): ScoredTool[] {
       score: Math.round(x.score * 100) / 100,
       rank: i + 1,
       fallback,
+      fallbackFilters: fallback ? appliedFilters : [],
       why: buildWhy(x.tool, s),
     }));
 }
@@ -7869,9 +7877,11 @@ function buildHandoff(ctx: HowTextContext): string {
   return ` Use this output as the input for the next step (${ctx.nextStageLabel}).`;
 }
 
-/** Component #7: pain-source closing. */
+/** Component #7: pain-source closing — Q12 quality/speed overrides Q5's assumed pain. */
 function buildClosing(ctx: HowTextContext): string {
-  switch (ctx.state.painSource) {
+  const qvs = ctx.state.qualityVsSpeed;
+  const pain = qvs === "speed" ? "save_time" : qvs === "quality" ? "improve_quality" : ctx.state.painSource;
+  switch (pain) {
     case "save_time":
       return " This is the fastest path — don't over-edit here.";
     case "reduce_effort":
@@ -7883,6 +7893,14 @@ function buildClosing(ctx: HowTextContext): string {
     default:
       return "";
   }
+}
+
+/** Component #8: W5 tool-switching tip (CC). */
+function buildW5Tip(ctx: HowTextContext): string {
+  const w5 = (ctx.state as any).toolSwitchPref;
+  if (w5 === "single") return " Tip: You can do this step in your main AI tool instead of a specialist — ask it directly.";
+  if (w5 === "best") return " This is a specialist tool picked for this exact stage — it'll outperform a general AI here.";
+  return "";
 }
 
 function capitalize(s: string): string {
@@ -7904,9 +7922,10 @@ function buildHowText(ctx: HowTextContext): string {
   const example = examplesOn ? buildExample(ctx) : ""; // C5
   const handoff = buildHandoff(ctx); // C6
   const closing = buildClosing(ctx); // C7
+  const w5tip = buildW5Tip(ctx); // C8
 
   // opening already ends in a space/colon; core is a bare lowercase imperative.
-  return (opening + core + depth + example + handoff + closing).replace(/\s+/g, " ").trim();
+  return (opening + core + depth + example + handoff + closing + w5tip).replace(/\s+/g, " ").trim();
 }
 
 
@@ -8584,21 +8603,23 @@ async function pingServer(): Promise<void> {}
 
 // ── Pipeline composition ────────────────────────────────────────────────────
 
+const PHASE_STAGE_PATTERNS: Record<string, RegExp> = {
+  research: /^(topic|research|info_search)/,
+  ideation: /^(hook|ideation|brainstorm|outline)/,
+  script: /^(script|writing|draft|copy)/,
+  production: /^(record|shoot|design|create|generation)/,
+  editing: /^(edit|polish|refine|revision)/,
+  publishing: /^(publish|distribut|schedule|upload|export)/,
+};
+
 /** Resolve the Improve start index from the coarse pain-phase (Q6). */
-function resolveStartIndex(state: UserState, preLen: number, prodLen: number, fullLen: number): number {
+function resolveStartIndex(state: UserState, full: StageKey[]): number {
   const phase = state.painStage as string | undefined;
-  let idx = 0;
-  switch (phase) {
-    case "research": idx = 0; break;
-    case "ideation": idx = Math.min(1, preLen - 1); break;
-    case "script": idx = Math.max(0, preLen - 1); break;
-    case "production": idx = preLen; break;
-    case "editing": idx = preLen + Math.max(0, prodLen - 2); break;
-    case "publishing": idx = preLen + prodLen; break;
-    case "all":
-    default: idx = 0; break;
-  }
-  return Math.max(0, Math.min(idx, fullLen - 1));
+  if (!phase || phase === "all") return 0;
+  const pattern = PHASE_STAGE_PATTERNS[phase];
+  if (!pattern) return 0;
+  const idx = full.findIndex(s => pattern.test(s));
+  return idx >= 0 ? idx : 0;
 }
 
 /**
@@ -8607,23 +8628,29 @@ function resolveStartIndex(state: UserState, preLen: number, prodLen: number, fu
  *   - improve   → full pipeline sliced from the pain-phase start index
  *   - create / automate → full standard pipeline
  */
+interface StageEntry { key: StageKey; assumedWorking?: boolean; }
+
 function determineStages(state: UserState): StageKey[] {
+  return determineStagesRich(state).map(e => e.key);
+}
+
+function determineStagesRich(state: UserState): StageEntry[] {
   if (!state.contentFamily || !state.specialty) return [];
   const fam = PIPELINES[state.contentFamily];
   const sub = specialtySubtype(state.specialty);
   const prod = fam.production[sub] ?? [];
 
   if (state.purpose === "repurpose") {
-    return ["extraction_clip", "adaptation", ...prod, ...fam.distribution];
+    return (["extraction_clip", "adaptation", ...prod, ...fam.distribution] as StageKey[]).map(k => ({ key: k }));
   }
 
   const full: StageKey[] = [...fam.pre, ...prod, ...fam.distribution];
 
   if (state.purpose === "improve") {
-    const start = resolveStartIndex(state, fam.pre.length, prod.length, full.length);
-    return full.slice(start);
+    const start = resolveStartIndex(state, full);
+    return full.map((k, i) => ({ key: k, assumedWorking: i < start }));
   }
-  return full;
+  return full.map(k => ({ key: k }));
 }
 
 // ── Export params (final stage, spec §7 + §4.3 platform) ────────────────────
@@ -8723,24 +8750,28 @@ function summarize(state: UserState): RoadmapSummary {
  * The optional agent overlay is applied separately via enhanceRoadmap().
  */
 function assembleRoadmap(state: UserState, memory: WeightMemory = {}): Roadmap {
-  const stages = determineStages(state);
+  const richStages = determineStagesRich(state);
+  const stages = richStages.map(e => e.key);
   const weights = deriveWeights(state, memory);
   const fallbackStages: StageKey[] = [];
 
   let prevOutput: string | null = null;
-  const steps: RoadmapStep[] = stages.map((stage, i) => {
+  const steps: RoadmapStep[] = richStages.map((entry, i) => {
+    const stage = entry.key;
     const tools = scoreStage(stage, state, weights);
     if (tools[0]?.fallback) fallbackStages.push(stage);
     const primaryTool = tools[0]?.tool ?? null;
-    const isLast = i === stages.length - 1;
-    const nextStageLabel = isLast ? null : STAGE_DEFS[stages[i + 1]].label;
-    const how = buildHowText({
-      tool: primaryTool,
-      stage,
-      specialty: state.specialty as Specialty,
-      state,
-      nextStageLabel,
-    });
+    const isLast = i === richStages.length - 1;
+    const nextStageLabel = isLast ? null : STAGE_DEFS[richStages[i + 1].key].label;
+    const how = entry.assumedWorking
+      ? "✓ You said this part is already working — we're skipping ahead."
+      : buildHowText({
+          tool: primaryTool,
+          stage,
+          specialty: state.specialty as Specialty,
+          state,
+          nextStageLabel,
+        });
     const handoff = nextStageLabel ? `Hand off to: ${nextStageLabel}.` : null;
     const intel = buildStepIntel(stage, prevOutput, state);
     prevOutput = intel.output;
@@ -8751,18 +8782,23 @@ function assembleRoadmap(state: UserState, memory: WeightMemory = {}): Roadmap {
       goal: STAGE_DEFS[stage].goal,
       how,
       handoff,
-      tools,
-      primaryTool,
+      tools: entry.assumedWorking ? [] : tools,
+      primaryTool: entry.assumedWorking ? null : primaryTool,
       prompt: buildToolPrompt(stage, primaryTool, state),
       input: intel.input,
       output: intel.output,
       proMove: intel.proMove,
       avoid: intel.avoid,
       minutes: intel.minutes,
+      assumedWorking: entry.assumedWorking,
     };
     if (isLast) step.exportParams = buildExportParams(state);
     return step;
   });
+
+  const ccDisclosure = (state.commercialUse === "high" || state.commercialUse === "medium")
+    ? "AI disclosure reminder: If any AI-generated content is used commercially — especially in ads, sponsored posts, or client deliverables — check your jurisdiction's disclosure requirements. The FTC (US) and EU AI Act require labeling AI-generated content in regulated contexts."
+    : null;
 
   const roadmap: Roadmap = {
     shape: state.purpose === "repurpose" ? "transformation" : "standard",
@@ -8774,6 +8810,7 @@ function assembleRoadmap(state: UserState, memory: WeightMemory = {}): Roadmap {
     quickStart: buildQuickStart(steps),
     steps,
     fallbackStages,
+    disclosure: ccDisclosure,
   };
   roadmap.brief = buildStrategyBrief(state, roadmap);
   return roadmap;
@@ -8976,6 +9013,9 @@ interface MarketingAnswers {
   qualityVsSpeed?: QualityVsSpeed;
   toolPreference?: ToolPreference;
   usageContext?: UsageContext;
+
+  // W5 — tool switching preference
+  toolSwitchPref?: "single" | "open" | "best";
 
   // Free-text context captured by the adaptive clarifier when the pool runs thin
   adaptiveNotes?: string[];
@@ -13252,10 +13292,11 @@ function applyImprovePath(
   return base.map((s, i) => (i < idx ? { ...s, assumedWorking: true } : s));
 }
 
-/** Repurpose path — swap the 3 shared pre-stages for the transformation header. */
+const SHARED_PRE_KEYS = new Set(["shared.research_insight", "shared.audience", "shared.strategy_brief"]);
+
+/** Repurpose path — swap the shared pre-stages for the transformation header. */
 function applyRepurposePath(base: MarketingStage[]): MarketingStage[] {
-  // Drop the first 3 (shared pre-stages) and prepend the transformation header.
-  const tail = base.slice(3);
+  const tail = base.filter(s => !SHARED_PRE_KEYS.has(s.key));
   return [...REPURPOSE_HEADER, ...tail];
 }
 
@@ -14618,6 +14659,11 @@ function applyHardFilters(
     });
   }
 
+  // Regulated industry soft boost — prefer tools with higher trust scores
+  if (a.industry === "regulated") {
+    pool = pool.filter((t) => t.trustScore >= 3);
+  }
+
   return { pool, partialIds, fallback: relax };
 }
 
@@ -14817,21 +14863,30 @@ function workedExample(
   return `Example: ask ${tool.name} for a ${stage.label.toLowerCase()} draft tailored to ${audience}, then iterate in 2 rounds.`;
 }
 
+function w5Tip(answers?: MarketingAnswers): string {
+  const w5 = answers?.toolSwitchPref;
+  if (w5 === "single") return " Tip: You can do this step in your main AI tool instead of a specialist — ask it directly.";
+  if (w5 === "best") return " This is a specialist tool picked for this exact stage — it'll outperform a general AI here.";
+  return "";
+}
+
 /** Compose the components into one paragraph at the requested depth. */
 function renderHowText(
   c: HowComponents,
   depth: MarketingAnswers["depth"] = "balanced",
+  answers?: MarketingAnswers,
 ): string {
+  const tip = w5Tip(answers);
   if (depth === "short") {
-    return [c.context, c.action].join(" ");
+    return [c.context, c.action].join(" ") + tip;
   }
   if (depth === "balanced") {
-    return [c.context, c.action, c.handoff, c.watchOut].join(" ");
+    return [c.context, c.action, c.handoff, c.watchOut].join(" ") + tip;
   }
   // detailed
   const parts = [c.context, c.setup, c.inputs, c.action, c.output, c.handoff, c.watchOut];
   if (c.example) parts.push(c.example);
-  return parts.join(" ");
+  return parts.join(" ") + tip;
 }
 
 
@@ -15127,8 +15182,12 @@ const DISCLOSURE_FOOTNOTE =
   "closing reminder rather than a tool recommendation. Revisit when tools add this capability.";
 
 function shouldShowDisclosure(a: MarketingAnswers): boolean {
-  const flags = [a.perfAiContent, a.socialAiContent, a.brandAiContent];
-  return flags.some((f) => f === "yes" || f === "sometimes");
+  const flags = [a.perfAiContent, a.socialAiContent, a.brandAiContent,
+    (a as any).contentAiContent, (a as any).emailAiContent];
+  if (flags.some((f) => f === "yes" || f === "sometimes")) return true;
+  const aiSpecialties = ["content", "email", "social", "performance", "brand"];
+  if (a.specialty && aiSpecialties.includes(a.specialty)) return true;
+  return false;
 }
 
 return { determineStages, buildHeaderChips, nextQuestion, isQuestionAnswered, MARKETING_QUESTIONS, spBreakdownOptions, spRepurposeOptions, activeChips, deriveWeights, rankStageTools, poolForStage, buildHowComponents, renderHowText, buildStrategyBrief, buildQuickStart, buildToolPrompt, buildCpRender, prefillFormat, shouldShowDisclosure, DISCLOSURE_TEXT, DISCLOSURE_FOOTNOTE, MARKETING_TOOL_PROFILES, basePipeline };
@@ -23922,13 +23981,18 @@ function ST_determineStages(answers: any): ST_Stage[] {
   return stages;
 }
 
-function ST_applyImprovePath(stages: ST_Stage[], _answers: any): ST_Stage[] {
-  return stages;
+function ST_applyImprovePath(stages: ST_Stage[], answers: any): ST_Stage[] {
+  const bd = answers.breakdownStage;
+  if (!bd) return stages;
+  const idx = stages.findIndex(s => s.key.endsWith("." + bd) || s.key === bd);
+  if (idx < 0) return stages;
+  return stages.map((s, i) => i < idx ? { ...s, assumedWorking: true } : s);
 }
 
 function ST_applyRepurposePath(stages: ST_Stage[], _answers: any): ST_Stage[] {
   if (stages.length < 2) return stages;
-  return [{ ...stages[0], label: "Adapt Source", goal: "Transform existing work for a new purpose." }, ...stages.slice(1)];
+  const donor = stages.length > 1 ? stages[1] : stages[0];
+  return [{ ...stages[0], label: "Adapt Source", goal: "Transform existing work for a new purpose.", key: donor.key as ST_StageKey, toolCategory: donor.toolCategory }, ...stages.slice(1)];
 }
 
 function ST_applyAutomatePath(stages: ST_Stage[], _answers: any): ST_Stage[] {
@@ -23966,7 +24030,7 @@ const ST_FOCUS_OPTIONS: ST_QuestionOption[] = [
   ST_opt("Problem Solving", "ps", "Math, science, coding, logic problems"),
   ST_opt("Projects & Assignments", "pa", "Group projects, presentations, portfolios"),
   ST_opt("Language Learning", "ll", "New language, ESL, conversation practice"),
-  ST_opt("Skill Development", "sd", "Career skills, certifications, job hunting"),
+  ST_opt("Career Development", "sd", "Career skills, certifications, job hunting"),
 ];
 
 const ST_S2B_OPTIONS: Record<string, ST_QuestionOption[]> = {
@@ -24136,6 +24200,12 @@ const ST_STUDENTS_QUESTIONS: ST_Question[] = [
     ]}],
     isRelevant: ST_always(),
   },
+  {
+    id: "SP-b", layer: "what", title: "Where exactly is it breaking down?", priority: 21,
+    hint: "We'll start your roadmap from this point — earlier stages are marked as done.",
+    parts: [{ field: "breakdownStage", type: "single", options: [] }],
+    isRelevant: (a: any) => a.purpose === "improve" && !a.breakdownStage,
+  },
   // ── HOW layer ──
   {
     id: "H1", layer: "how", title: "How comfortable are you with AI tools?", priority: 30,
@@ -24231,16 +24301,31 @@ function ST_isQuestionAnswered(q: ST_Question, answers: any): boolean {
   });
 }
 
-function ST_nextQuestion(answers: any): ST_Question | null {
-  // Patch S2b options based on subject
-  const s2bQ = ST_STUDENTS_QUESTIONS.find(q => q.id === "S2b")!;
-  if (answers.subject && ST_S2B_OPTIONS[answers.subject]) {
-    s2bQ.parts = [{ field: "specificTopic", type: "single", options: ST_S2B_OPTIONS[answers.subject] }];
-  }
+const ST_SPB_OPTIONS: Record<string, ST_QuestionOption[]> = {
+  rw: [ST_opt("Finding sources", "find_sources"), ST_opt("Reading & understanding", "read_synthesize"), ST_opt("Outlining & planning", "outline_plan"), ST_opt("Writing the draft", "draft"), ST_opt("Citing & referencing", "cite_reference"), ST_opt("Polishing & editing", "polish")],
+  se: [ST_opt("Identifying knowledge gaps", "identify_gaps"), ST_opt("Building study materials", "build_materials"), ST_opt("Practice & drilling", "practice_drill")],
+  ps: [ST_opt("Understanding the problem", "understand"), ST_opt("Getting unstuck", "get_unstuck"), ST_opt("Documenting my solution", "document")],
+  pa: [ST_opt("Defining scope", "define_scope"), ST_opt("Research & planning", "research_plan"), ST_opt("Creating assets", "create_assets"), ST_opt("Building & assembling", "build_assemble"), ST_opt("Polishing & refining", "polish_refine")],
+  ll: [ST_opt("Learning new material", "learn_material"), ST_opt("Practicing skills", "practice_skills")],
+  sd: [ST_opt("Researching paths", "research_paths"), ST_opt("Building materials", "build_materials")],
+};
 
+function ST_nextQuestion(answers: any): ST_Question | null {
   const sorted = [...ST_STUDENTS_QUESTIONS].sort((a, b) => a.priority - b.priority);
   for (const q of sorted) {
     if (!q.isRelevant(answers)) continue;
+    // S2b: inject subject-specific options without mutating the master array
+    if (q.id === "S2b" && answers.subject && ST_S2B_OPTIONS[answers.subject]) {
+      const patched = { ...q, parts: [{ field: "specificTopic", type: "single" as const, options: ST_S2B_OPTIONS[answers.subject] }] };
+      if (!ST_isQuestionAnswered(patched, answers)) return patched;
+      continue;
+    }
+    // SP-b: inject focus-area-specific breakdown options without mutating
+    if (q.id === "SP-b" && answers.focusArea && ST_SPB_OPTIONS[answers.focusArea]) {
+      const patched = { ...q, parts: [{ field: "breakdownStage", type: "single" as const, options: ST_SPB_OPTIONS[answers.focusArea] }] };
+      if (!ST_isQuestionAnswered(patched, answers)) return patched;
+      continue;
+    }
     if (ST_isQuestionAnswered(q, answers)) continue;
     return q;
   }
@@ -24249,7 +24334,7 @@ function ST_nextQuestion(answers: any): ST_Question | null {
 
 const ST_FOCUS_LABEL: Record<string, string> = {
   rw: "Research & Writing", se: "Study & Exam Prep", ps: "Problem Solving",
-  pa: "Projects & Assignments", ll: "Language Learning", sd: "Skill Development",
+  pa: "Projects & Assignments", ll: "Language Learning", sd: "Career Development",
 };
 const ST_LEVEL_LABEL: Record<string, string> = {
   high_school: "High School", undergrad: "Undergraduate", graduate: "Graduate", self_learner: "Self-Learner",
@@ -24309,6 +24394,7 @@ function ST_deriveWeights(answers: any): ST_ToolAttrs {
   else if (answers.aiComfort === "regular") { w.ease = 1; }
 
   if (answers.budget === "free") { w.cost = 5; }
+  if (answers.budget === "student_discount") { w.cost = 4; }
   if (answers.riskTolerance === "safe") { w.risk = 5; w.trust = 5; }
 
   if (answers.toolPref === "familiar") { w.trust = 5; }
@@ -24367,6 +24453,10 @@ function ST_rankStageTools(pool: ST_ToolProfile[], answers: any, topN: number = 
     const isLLM = ST_GENERAL_LLM_NAMES.test(t.name);
     if (w5 === "single" && isLLM) score += 2;
     if (w5 === "best" && !isLLM) score += 1;
+    if (answers.budget === "student_discount") {
+      const ft = (t.freeTier || "").toLowerCase();
+      if (ft.includes("student") || ft.includes("edu") || ft.includes("academic")) score += 1.5;
+    }
     return {
       tool: t,
       score,
@@ -24445,8 +24535,8 @@ function ST_buildQuickStart(answers: any, firstStage: ST_Stage): string[] {
 function ST_buildToolPrompt(stage: ST_Stage, tool: ST_ToolProfile, answers: any): string {
   const fa = answers.focusArea as ST_FocusArea;
   const level = answers.level || "student";
-  const subject = answers.subject || "my subject";
-  return `I'm a ${ST_LEVEL_LABEL[level] || level} student studying ${subject}. ` +
+  const subjectLine = answers.subject ? ` studying ${answers.subject}` : "";
+  return `I'm a ${ST_LEVEL_LABEL[level] || level} student${subjectLine}. ` +
     `I'm working on ${ST_FOCUS_LABEL[fa] || fa}. ` +
     `I'm at the "${stage.label}" stage. ` +
     `I need to: ${stage.goal} ` +
@@ -24684,6 +24774,8 @@ function App() {
     if (!q) return;
     const next = { ...mkAnswers };
     for (const p of q.parts) delete next[p.field];
+    if (qid === "WHO-1") { delete next.mkSpecialty; delete next.breakdownStage; }
+    if (qid === "SP") { delete next.breakdownStage; }
     setMkAnswers(next);
   }
 
@@ -24753,6 +24845,12 @@ function App() {
     if (!q) return;
     const next = { ...stAnswers };
     for (const p of q.parts) delete next[p.field];
+    if (qid === "S2") { delete next.specificTopic; }
+    if (qid === "SF") {
+      const branchFields = ["b1Rw","b2Rw","b3Rw","b1Se","b2Se","b1Ps","b1Pa","b2Pa","b1Ll","b2Ll","b3Ll","b1Sd","breakdownStage"];
+      for (const f of branchFields) delete next[f];
+    }
+    if (qid === "SP") { delete next.breakdownStage; }
     setStAnswers(next);
   }
 
@@ -24867,10 +24965,10 @@ function App() {
         <FieldPicker onCC={start} onMarketing={startMarketing} onEducation={startEducation} onStudents={startStudents} onHome={() => setView("home")} />
       )}
       {view === "quiz" && (
-        <Quiz state={state} answered={answered} current={current} onSubmit={submit} onBack={back} history={history} />
+        <Quiz state={state} answered={answered} current={current} onSubmit={submit} onBack={back} history={history} onRestart={start} />
       )}
       {view === "mkquiz" && (
-        <MarketingQuiz current={mkCurrent} answers={mkAnswers} onSubmit={mkSubmit} onBack={mkBack} onEditChip={mkEditChip} />
+        <MarketingQuiz current={mkCurrent} answers={mkAnswers} onSubmit={mkSubmit} onBack={mkBack} onEditChip={mkEditChip} onRestart={startMarketing} />
       )}
       {view === "mkroadmap" && (
         <MarketingRoadmap answers={mkAnswers} onRestart={() => setView("fields")} />
@@ -25608,7 +25706,7 @@ const COMPOUND: Record<string, any> = {
   },
 };
 
-function Quiz({ state, answered, current, onSubmit, onBack }: any) {
+function Quiz({ state, answered, current, onSubmit, onBack, onRestart }: any) {
   const [sel, setSel] = useState<string[]>([]);
   const [pair, setPair] = useState<string[]>([]);
   // High-water mark so the tree never *unlights* — branches only grow, never shrink.
@@ -25695,6 +25793,7 @@ function Quiz({ state, answered, current, onSubmit, onBack }: any) {
             <button className="fg-btn-back" onClick={onBack}>← Back</button>
             <button className="fg-btn-primary" disabled={!ready} onClick={go}>Continue →</button>
           </div>
+          {onRestart && <button className="fg-btn-ghost" onClick={onRestart} style={{ marginTop: "8px", fontSize: "12px", opacity: 0.6 }}>↻ Start over</button>}
         </div>
       </div>
     </section>
@@ -25832,7 +25931,7 @@ function RoadmapView({ roadmap, onRestart, onFeedback, enhancing, aiOn, aiError 
 
       {roadmap.fallbackStages.length > 0 && (
         <div className="fg-fallback">
-          ⚠ {roadmap.fallbackStages.length} step(s) had no tool surviving your filters — showing the full pool there.
+          ⚠ {roadmap.fallbackStages.length} step(s) had limited matches — your filters narrowed the pool. Look for the "Limited match" badge below. You can restart and adjust your answers to see different results.
         </div>
       )}
 
@@ -25852,6 +25951,12 @@ function RoadmapView({ roadmap, onRestart, onFeedback, enhancing, aiOn, aiError 
           />
         ))}
       </div>
+
+      {roadmap.disclosure && (
+        <div className="fg-fallback" style={{ marginTop: "24px", background: "var(--fg-surface, rgba(0,0,0,0.25))", borderLeft: "3px solid var(--fg-warn, #c0850a)" }}>
+          ⚠ {roadmap.disclosure}
+        </div>
+      )}
 
       <div className="fg-rm-foot-note">{aiOn ? "✦ Steps marked ✦ were personalised for your exact niche and goal." : ""}</div>
 
@@ -25920,6 +26025,20 @@ function NicheField({ label, v }: any) {
 
 function StarStep({ step, index, isOpen, isLast, onToggle, onFeedback }: any) {
   const primary = step.primaryTool;
+  if (step.assumedWorking) {
+    return (
+      <div className={`fg-star-step assumed ${isLast ? "last" : ""}`} style={{ opacity: 0.5 }}>
+        <span className="fg-star-node" style={{ pointerEvents: "none" }}>
+          <span className="fg-star-orbit" />
+          <span className="fg-star-core"><span className="fg-star-num">✓</span></span>
+        </span>
+        <span className="fg-star-summary" style={{ pointerEvents: "none" }}>
+          <span className="fg-star-name">{step.label}</span>
+          <span className="fg-star-goal" style={{ fontStyle: "italic" }}>You said this part is already working</span>
+        </span>
+      </div>
+    );
+  }
   return (
     <div className={`fg-star-step ${isOpen ? "open" : ""} ${isLast ? "last" : ""}`}>
       <button className="fg-star-node" onClick={onToggle} aria-expanded={isOpen}>
@@ -25929,7 +26048,10 @@ function StarStep({ step, index, isOpen, isLast, onToggle, onFeedback }: any) {
         </span>
       </button>
       <button className="fg-star-summary" onClick={onToggle}>
-        <span className="fg-star-name">{step.label}</span>
+        <span className="fg-star-name">
+          {step.label}
+          {step.tools[0]?.fallback && <span className="fg-pill" style={{ marginLeft: "8px", fontSize: "10px", background: "var(--fg-warn, #c0850a)", color: "#fff" }}>Limited match</span>}
+        </span>
         <span className="fg-star-meta">
           {primary && <span className="fg-star-tool">{primary.name}</span>}
           <span className="fg-star-mins">{step.minutes}</span>
@@ -25939,6 +26061,12 @@ function StarStep({ step, index, isOpen, isLast, onToggle, onFeedback }: any) {
 
       {isOpen && (
         <div className="fg-star-detail">
+          {step.tools[0]?.fallback && step.tools[0]?.fallbackFilters?.length > 0 && (
+            <div className="fg-fallback" style={{ fontSize: "12px", padding: "8px 12px", marginBottom: "12px" }}>
+              ⚠ No tools matched your filters ({step.tools[0].fallbackFilters.join(", ")}) — showing the full pool. Adjust your answers to see filtered results.
+            </div>
+          )}
+
           <div className="fg-flow">
             <span className="fg-flow-cell"><b>In</b> {step.input}</span>
             <span className="fg-flow-arrow">→</span>
@@ -26041,7 +26169,7 @@ const MK_LAYER_LABEL: Record<string, string> = {
   why: "Choosing the right tools",
 };
 
-function MarketingQuiz({ current, answers, onSubmit, onBack, onEditChip }: any) {
+function MarketingQuiz({ current, answers, onSubmit, onBack, onEditChip, onRestart }: any) {
   // picks[field] is either a string (single) or string[] (multi).
   const [picks, setPicks] = useState<Record<string, any>>({});
   useEffect(() => { setPicks({}); }, [current?.id]);
@@ -26139,6 +26267,7 @@ function MarketingQuiz({ current, answers, onSubmit, onBack, onEditChip }: any) 
             <button className="fg-btn-back" onClick={onBack}>← Back</button>
             <button className="fg-btn-primary" disabled={!ready} onClick={() => onSubmit(picks)}>Continue →</button>
           </div>
+          {onRestart && <button className="fg-btn-ghost" onClick={onRestart} style={{ marginTop: "8px", fontSize: "12px", opacity: 0.6 }}>↻ Start over</button>}
         </div>
       </div>
     </section>

@@ -13580,6 +13580,7 @@ const PERF_1: MarketingQuestion = {
   layer: "what",
   priority: 10,
   title: "Your ad channels and campaign goals",
+  hint: "Where you advertise and what you're optimising for determines which AI tools apply.",
   parts: [
     {
       label: "Platform",
@@ -13647,6 +13648,7 @@ const PERF_3: MarketingQuestion = {
   priority: 12,
   title:
     "What type of ad creative are you running, and does any of it use AI-generated content in these paid placements?",
+  hint: "AI-generated ads may require disclosure — we'll flag that if it applies to you.",
   parts: [
     {
       label: "Creative format",
@@ -13686,6 +13688,7 @@ const EMAIL_1: MarketingQuestion = {
   layer: "what",
   priority: 10,
   title: "Your email platform and sending method",
+  hint: "We'll recommend tools that plug into what you already use.",
   parts: [
     {
       label: "Platform",
@@ -13717,6 +13720,7 @@ const EMAIL_2: MarketingQuestion = {
   layer: "what",
   priority: 11,
   title: "Your biggest email challenge and list size",
+  hint: "This tells us which part of your email workflow to focus the roadmap on.",
   parts: [
     {
       label: "Pain point",
@@ -13749,6 +13753,7 @@ const EMAIL_3: MarketingQuestion = {
   layer: "what",
   priority: 12,
   title: "Who designs your emails?",
+  hint: "If you're doing it yourself, we'll add design-assist tools to your roadmap.",
   parts: [
     {
       label: "Designer",
@@ -13773,6 +13778,7 @@ const SOCIAL_1: MarketingQuestion = {
   layer: "what",
   priority: 10,
   title: "Your main platform and content style",
+  hint: "Each platform has its own best-fit AI tools for creating and scheduling.",
   parts: [
     {
       label: "Platform",
@@ -13808,6 +13814,7 @@ const SOCIAL_2: MarketingQuestion = {
   layer: "what",
   priority: 11,
   title: "Your social goals and biggest pain point",
+  hint: "We'll focus your roadmap on fixing this specific bottleneck.",
   parts: [
     {
       label: "Purpose",
@@ -13842,6 +13849,7 @@ const SOCIAL_3: MarketingQuestion = {
   layer: "what",
   priority: 12,
   title: "Do you use AI visuals in paid posts?",
+  hint: "If yes, we'll add a disclosure compliance step to your roadmap.",
   parts: [
     {
       label: "AI content in paid posts?",
@@ -13868,6 +13876,7 @@ const BRAND_1: MarketingQuestion = {
   layer: "what",
   priority: 10,
   title: "Your brand stage and current focus",
+  hint: "Starting fresh vs. refreshing vs. scaling — each needs a different set of tools.",
   parts: [
     {
       label: "Stage",
@@ -13901,6 +13910,7 @@ const BRAND_2: MarketingQuestion = {
   priority: 11,
   title:
     "Who's producing it, and does it run in paid or sponsored placements with AI-generated elements?",
+  hint: "Solo creators get more hands-on tools; AI in paid ads triggers a compliance step.",
   parts: [
     {
       label: "Producer",
@@ -13935,6 +13945,7 @@ const CM_1: MarketingQuestion = {
   layer: "what",
   priority: 10,
   title: "Your content type and funnel stage",
+  hint: "Blog posts and videos need different creation tools; top-of-funnel and bottom-of-funnel need different strategies.",
   parts: [
     {
       label: "Content type",
@@ -13968,6 +13979,7 @@ const CM_2: MarketingQuestion = {
   layer: "what",
   priority: 11,
   title: "Where you publish and your biggest time sink",
+  hint: "We'll focus your roadmap on the step that eats the most time.",
   parts: [
     {
       label: "Distribution",
@@ -14002,6 +14014,7 @@ const CM_3: MarketingQuestion = {
   layer: "what",
   priority: 12,
   title: "Does this content need to rank in search?",
+  hint: "If yes, we'll add SEO steps to your content roadmap.",
   parts: [
     {
       label: "Search / AI visibility",
@@ -14030,6 +14043,7 @@ const AG_1: MarketingQuestion = {
   priority: 10,
   title:
     "What's the main focus of your analytics work, and how would you describe your current data setup?",
+  hint: "Your current setup determines which tools and integrations make sense.",
   parts: [
     {
       label: "Focus",
@@ -14062,6 +14076,7 @@ const AG_2: MarketingQuestion = {
   layer: "what",
   priority: 11,
   title: "What's the biggest gap right now?",
+  hint: "We'll prioritise solving this first in your roadmap.",
   parts: [
     {
       label: "Gap",
@@ -14224,6 +14239,7 @@ const SP_C: MarketingQuestion = {
   layer: "what",
   priority: 52,
   title: "What do you have to work from?",
+  hint: "We'll build the roadmap around transforming this into a new format.",
   parts: [
     {
       label: "Source asset",
@@ -18546,6 +18562,7 @@ const ED_EDUCATION_QUESTIONS: ED_Question[] = [
   },
   {
     id: "E1b", layer: "who", title: "What type?", priority: 2,
+    hint: "This narrows down which tools and standards apply to your context.",
     parts: [{ field: "orgSubType", type: "single", options: [] }],
     isRelevant: (a: any) => a.orgType === "k12" || a.orgType === "higher_ed",
     apply: (a: any, v: any) => {
@@ -18554,6 +18571,7 @@ const ED_EDUCATION_QUESTIONS: ED_Question[] = [
   },
   {
     id: "E2", layer: "who", title: "What subject area do you primarily work in?", priority: 3,
+    hint: "Different subjects benefit from different AI tools and content formats.",
     parts: [{ field: "subject", type: "single", options: [
       ED_opt("STEM", "stem", "Science, technology, engineering, math"),
       ED_opt("Humanities", "humanities", "History, literature, philosophy, social sciences"),
@@ -18568,6 +18586,7 @@ const ED_EDUCATION_QUESTIONS: ED_Question[] = [
   },
   {
     id: "E3", layer: "who", title: "Who are your learners?", priority: 4,
+    hint: "Age group affects tone, complexity, and which platforms are appropriate.",
     parts: [{ field: "learners", type: "single", options: [
       ED_opt("Children 5–12", "children"), ED_opt("Adolescents 13–17", "adolescents"),
       ED_opt("Young adults 18–24", "young_adults"), ED_opt("Adult professionals", "adults"),
@@ -18577,6 +18596,7 @@ const ED_EDUCATION_QUESTIONS: ED_Question[] = [
   },
   {
     id: "E4", layer: "who", title: "How many learners do you typically work with?", priority: 5,
+    hint: "Larger groups benefit more from automation and batch tools.",
     parts: [{ field: "scale", type: "single", options: [
       ED_opt("Small (1–30)", "small"), ED_opt("Medium (31–200)", "medium"),
       ED_opt("Large (201–1,000)", "large"), ED_opt("Enterprise (1,000+)", "enterprise"),
@@ -18592,6 +18612,7 @@ const ED_EDUCATION_QUESTIONS: ED_Question[] = [
   // ── Branch context: CLD ──
   {
     id: "B1-CLD", layer: "what", title: "What type of learning material are you creating?", priority: 10,
+    hint: "Each format has different AI tools that work best for it.",
     parts: [{ field: "b1Cld", type: "single", options: [
       ED_opt("Lesson plans", "lesson_plans"), ED_opt("Worksheets", "worksheets"),
       ED_opt("Presentations", "presentations"), ED_opt("Interactive activities", "interactive"),
@@ -18610,6 +18631,7 @@ const ED_EDUCATION_QUESTIONS: ED_Question[] = [
   },
   {
     id: "B3-CLD", layer: "what", title: "Do you need to differentiate for multiple learner levels?", priority: 12,
+    hint: "Differentiation adds extra steps to adapt content for each level.",
     parts: [{ field: "b3Cld", type: "single", options: [
       ED_opt("No", "no"), ED_opt("Yes, 2–3 levels", "yes_2_3"), ED_opt("Yes, significant differentiation", "yes_significant"),
     ]}],
@@ -18628,6 +18650,7 @@ const ED_EDUCATION_QUESTIONS: ED_Question[] = [
   },
   {
     id: "B2-IDL", layer: "what", title: "What platform or LMS will you deploy to?", priority: 11,
+    hint: "We'll recommend tools that export in formats your LMS accepts.",
     parts: [{ field: "b2Idl", type: "single", options: [
       ED_opt("Google Classroom", "google_classroom"), ED_opt("Canvas", "canvas"),
       ED_opt("Moodle", "moodle"), ED_opt("Articulate", "articulate"),
@@ -18649,6 +18672,7 @@ const ED_EDUCATION_QUESTIONS: ED_Question[] = [
   },
   {
     id: "B2-AG", layer: "what", title: "How many submissions do you grade per cycle?", priority: 11,
+    hint: "Higher volume means stronger automation recommendations.",
     parts: [{ field: "b2Ag", type: "single", options: [
       ED_opt("Under 50", "under_50"), ED_opt("50–150", "50_150"),
       ED_opt("150–500", "150_500"), ED_opt("500+", "500_plus"),
@@ -18658,6 +18682,7 @@ const ED_EDUCATION_QUESTIONS: ED_Question[] = [
   // ── Branch context: CD ──
   {
     id: "B1-CD", layer: "what", title: "What scope are you working at?", priority: 10,
+    hint: "Wider scope means more coordination steps in your roadmap.",
     parts: [{ field: "b1Cd", type: "single", options: [
       ED_opt("Single course", "single_course"), ED_opt("Full program", "full_program"),
       ED_opt("Department-wide", "department"), ED_opt("Institution-wide", "institution"),
@@ -18677,6 +18702,7 @@ const ED_EDUCATION_QUESTIONS: ED_Question[] = [
   // ── Branch context: ARP ──
   {
     id: "B1-ARP", layer: "what", title: "What type of academic output are you working on?", priority: 10,
+    hint: "Each output type has different stages and formatting requirements.",
     parts: [{ field: "b1Arp", type: "single", options: [
       ED_opt("Journal article", "journal"), ED_opt("Conference paper", "conference"),
       ED_opt("Thesis", "thesis"), ED_opt("Book chapter", "book_chapter"),
@@ -18686,6 +18712,7 @@ const ED_EDUCATION_QUESTIONS: ED_Question[] = [
   },
   {
     id: "B2-ARP", layer: "what", title: "What research approach are you using?", priority: 11,
+    hint: "This determines which data analysis and writing tools we recommend.",
     parts: [{ field: "b2Arp", type: "single", options: [
       ED_opt("Quantitative", "quantitative"), ED_opt("Qualitative", "qualitative"),
       ED_opt("Mixed methods", "mixed"), ED_opt("Theoretical", "theoretical"),
@@ -18716,6 +18743,7 @@ const ED_EDUCATION_QUESTIONS: ED_Question[] = [
   // ── Purpose compound ──
   {
     id: "SP", layer: "what", title: "What are you actually trying to do right now?", priority: 20,
+    hint: "This shapes the entire structure of your roadmap.",
     parts: [{ field: "purpose", type: "single", options: [
       ED_opt("Create", "create", "Build something new from scratch"),
       ED_opt("Improve", "improve", "Fix or improve something that isn't working"),
@@ -18726,11 +18754,13 @@ const ED_EDUCATION_QUESTIONS: ED_Question[] = [
   },
   {
     id: "SP-b", layer: "what", title: "Where exactly is it breaking down?", priority: 21,
+    hint: "Your roadmap will start right at this step — earlier stages are marked as done.",
     parts: [{ field: "breakdownStage", type: "single", options: [] }],
     isRelevant: (a: any) => a.purpose === "improve",
   },
   {
     id: "SP-c", layer: "what", title: "What do you have to work from?", priority: 22,
+    hint: "We'll build the roadmap around transforming this into a new format.",
     parts: [{ field: "sourceAsset", type: "single", options: [] }],
     isRelevant: (a: any) => a.purpose === "repurpose",
   },
@@ -24064,6 +24094,7 @@ const ST_STUDENTS_QUESTIONS: ST_Question[] = [
   // ── WHO trunk ──
   {
     id: "S1", layer: "who", title: "What level of education are you at?", priority: 1,
+    hint: "This affects which tools and study methods we recommend.",
     parts: [{ field: "level", type: "single", options: [
       ST_opt("High school", "high_school"), ST_opt("Undergraduate", "undergrad"),
       ST_opt("Graduate", "graduate"), ST_opt("Self-learner", "self_learner"),
@@ -24072,6 +24103,7 @@ const ST_STUDENTS_QUESTIONS: ST_Question[] = [
   },
   {
     id: "S2", layer: "who", title: "What subject area are you studying?", priority: 2,
+    hint: "Different subjects benefit from different AI tools.",
     parts: [{ field: "subject", type: "single", options: [
       ST_opt("Science", "science", "Biology, chemistry, physics, math, environmental"),
       ST_opt("Engineering", "engineering", "Mechanical, electrical, civil, architecture, computer"),
@@ -24086,6 +24118,7 @@ const ST_STUDENTS_QUESTIONS: ST_Question[] = [
   },
   {
     id: "S2b", layer: "who", title: "Which specific topic?", priority: 3,
+    hint: "This lets us tailor examples and tools to your exact subject.",
     parts: [{ field: "specificTopic", type: "single", options: [] }],
     isRelevant: (a: any) => !!a.subject && !!ST_S2B_OPTIONS[a.subject],
   },
@@ -24098,6 +24131,7 @@ const ST_STUDENTS_QUESTIONS: ST_Question[] = [
   // ── Branch context: RW ──
   {
     id: "B1-RW", layer: "what", title: "What type of writing?", priority: 10,
+    hint: "Each format has its own structure and AI tools that work best.",
     parts: [{ field: "b1Rw", type: "single", options: [
       ST_opt("Essay", "essay"), ST_opt("Research paper", "research_paper"), ST_opt("Report", "report"),
       ST_opt("Thesis / dissertation", "thesis"), ST_opt("Lab report", "lab_report"), ST_opt("Creative writing", "creative"),
@@ -24106,6 +24140,7 @@ const ST_STUDENTS_QUESTIONS: ST_Question[] = [
   },
   {
     id: "B2-RW", layer: "what", title: "How long is the final piece?", priority: 11,
+    hint: "Longer pieces need more planning stages in your roadmap.",
     parts: [{ field: "b2Rw", type: "single", options: [
       ST_opt("Short (under 1,000 words)", "short"), ST_opt("Medium (1,000–5,000)", "medium"),
       ST_opt("Long (5,000–15,000)", "long"), ST_opt("Very long (15,000+)", "very_long"),
@@ -24114,6 +24149,7 @@ const ST_STUDENTS_QUESTIONS: ST_Question[] = [
   },
   {
     id: "B3-RW", layer: "what", title: "Citation style required?", priority: 12,
+    hint: "We'll recommend citation tools that match your required format.",
     parts: [{ field: "b3Rw", type: "single", options: [
       ST_opt("APA", "apa"), ST_opt("MLA", "mla"), ST_opt("Chicago", "chicago"),
       ST_opt("Harvard", "harvard"), ST_opt("IEEE", "ieee"), ST_opt("Not sure / none", "none"),
@@ -24123,6 +24159,7 @@ const ST_STUDENTS_QUESTIONS: ST_Question[] = [
   // ── Branch context: SE ──
   {
     id: "B1-SE", layer: "what", title: "What are you studying for?", priority: 10,
+    hint: "Different exams benefit from different study strategies and tools.",
     parts: [{ field: "b1Se", type: "single", options: [
       ST_opt("Regular class tests", "class_tests"), ST_opt("Midterms", "midterms"),
       ST_opt("Finals", "finals"), ST_opt("Standardized test", "standardized"),
@@ -24132,6 +24169,7 @@ const ST_STUDENTS_QUESTIONS: ST_Question[] = [
   },
   {
     id: "B2-SE", layer: "what", title: "How much time until your exam?", priority: 11,
+    hint: "Less time means a more focused, intensive study plan.",
     parts: [{ field: "b2Se", type: "single", options: [
       ST_opt("Less than a week", "under_week"), ST_opt("1–4 weeks", "1_4_weeks"),
       ST_opt("1–3 months", "1_3_months"), ST_opt("3+ months", "3_plus_months"),
@@ -24141,6 +24179,7 @@ const ST_STUDENTS_QUESTIONS: ST_Question[] = [
   // ── Branch context: PS ──
   {
     id: "B1-PS", layer: "what", title: "What type of problem?", priority: 10,
+    hint: "Math, coding, and logic problems each have specialised AI tools.",
     parts: [{ field: "b1Ps", type: "single", options: [
       ST_opt("Math / calculation", "math"), ST_opt("Science / lab", "science"),
       ST_opt("Coding / programming", "coding"), ST_opt("Logic / reasoning", "logic"),
@@ -24151,6 +24190,7 @@ const ST_STUDENTS_QUESTIONS: ST_Question[] = [
   // ── Branch context: PA ──
   {
     id: "B1-PA", layer: "what", title: "What kind of project?", priority: 10,
+    hint: "The project type decides which planning and creation tools fit.",
     parts: [{ field: "b1Pa", type: "single", options: [
       ST_opt("Research project", "research"), ST_opt("Group project", "group"),
       ST_opt("Presentation", "presentation"), ST_opt("Portfolio", "portfolio"),
@@ -24160,6 +24200,7 @@ const ST_STUDENTS_QUESTIONS: ST_Question[] = [
   },
   {
     id: "B2-PA", layer: "what", title: "Working alone or in a team?", priority: 11,
+    hint: "Team projects unlock collaboration and coordination tools.",
     parts: [{ field: "b2Pa", type: "single", options: [
       ST_opt("Solo", "solo"), ST_opt("Small team (2–4)", "small_team"), ST_opt("Large team (5+)", "large_team"),
     ]}],
@@ -24180,6 +24221,7 @@ const ST_STUDENTS_QUESTIONS: ST_Question[] = [
   },
   {
     id: "B2-LL", layer: "what", title: "What's your current level?", priority: 11,
+    hint: "Beginner and advanced learners benefit from very different tools.",
     parts: [{ field: "b2Ll", type: "single", options: [
       ST_opt("Complete beginner", "beginner"), ST_opt("Elementary (A1–A2)", "elementary"),
       ST_opt("Intermediate (B1–B2)", "intermediate"), ST_opt("Advanced (C1+)", "advanced"),
@@ -24213,6 +24255,7 @@ const ST_STUDENTS_QUESTIONS: ST_Question[] = [
   // ── Purpose compound ──
   {
     id: "SP", layer: "what", title: "What's your approach right now?", priority: 20,
+    hint: "This shapes the entire structure of your roadmap.",
     parts: [{ field: "purpose", type: "single", options: [
       ST_opt("Create", "create", "Start fresh on a new task or project"),
       ST_opt("Improve", "improve", "Fix or improve work already in progress"),

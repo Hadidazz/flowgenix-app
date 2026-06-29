@@ -7196,7 +7196,7 @@ const QUESTIONS: Question[] = [
     layer: "what",
     field: "contentFamily",
     title: "What kind of content are you making?",
-    hint: "Pick the format you want to end up with. We'll shape everything after this around your answer.",
+    hint: "Video, blog, social post, image, or email — the final format decides the entire workflow from here.",
     type: "single",
     options: FAMILY_OPTIONS,
     priority: 10,
@@ -7207,7 +7207,7 @@ const QUESTIONS: Question[] = [
     layer: "deepen",
     field: "specialty",
     title: "Which style fits best?",
-    hint: "A talking-head vlog and a cinematic short film follow completely different production steps and tools.",
+    hint: "Within video alone there are vlogs, shorts, tutorials, and cinematic — each follows a different production path.",
     type: "single",
     options: [], // injected from Q2_OPTIONS[family]
     priority: 20,
@@ -7257,7 +7257,7 @@ const QUESTIONS: Question[] = [
     layer: "what",
     field: "purpose",
     title: "What's your goal right now?",
-    hint: "Starting fresh, fixing a draft, reusing old content, or going on autopilot — each one builds a different roadmap.",
+    hint: "If you already have a draft, we skip ideation and jump to editing. If you're starting fresh, we begin at brainstorming.",
     type: "single",
     // Composite "purpose|pain". UI renders purpose row + pain row, submits joined.
     options: [
@@ -7302,7 +7302,7 @@ const QUESTIONS: Question[] = [
     layer: "how",
     field: "aiFamiliarity",
     title: "How comfortable are you with AI tools?",
-    hint: "Never used AI? We'll walk you through every click. Use it daily? We'll skip the basics.",
+    hint: "If you've never opened ChatGPT, we explain every click. If AI is already part of your day, we skip setup steps.",
     type: "single",
     options: [
       { label: "Just starting out", value: "beginner", hint: "Never used ChatGPT, Gemini, or similar." },
@@ -14104,7 +14104,7 @@ const SP: MarketingQuestion = {
   layer: "what",
   priority: 50,
   title: "What are you actually trying to do right now?",
-  hint: "Building from scratch, fixing something, reusing old work, or automating — each one builds a different roadmap.",
+  hint: "Launching a new campaign starts at strategy. Fixing one that's underperforming skips to the stage that's broken.",
   parts: [
     {
       label: "Purpose",
@@ -14302,7 +14302,7 @@ const H3: MarketingQuestion = {
   layer: "how",
   priority: 62,
   title: "How much guidance do you want between steps?",
-  hint: "Should we spell out exactly what to copy and paste between tools, or just point you in the right direction?",
+  hint: "Full guidance shows you exactly how to move data between tools. Light guidance names the tool and lets you run.",
   parts: [
     {
       label: "Guidance level",
@@ -14323,7 +14323,7 @@ const H4: MarketingQuestion = {
   layer: "how",
   priority: 63,
   title: "How detailed should each step be?",
-  hint: "Quick overview gives you the action in 1–2 lines. Detailed adds full examples you can copy and follow.",
+  hint: "Short means just the tactic and tool name. Detailed means a worked example — like a sample ad copy you can edit.",
   parts: [
     {
       label: "Depth",
@@ -14351,7 +14351,7 @@ const W1: MarketingQuestion = {
   layer: "why",
   priority: 70,
   title: "What's your budget?",
-  hint: "Free-only shows tools with no paywall. A budget opens up premium tools with more features.",
+  hint: "Free gets you Canva free tier, ChatGPT free, etc. A budget unlocks tools like Jasper, Surfer SEO, or HubSpot paid plans.",
   parts: [
     {
       label: "Budget",
@@ -14374,7 +14374,7 @@ const W2: MarketingQuestion = {
   layer: "why",
   priority: 71,
   title: "Quality or speed?",
-  hint: "Quality picks slower, sharper tools. Speed picks fast, good-enough ones.",
+  hint: "Quality means polished, on-brand output even if it takes more rounds. Speed means ship it now and iterate later.",
   parts: [
     {
       label: "Preference",
@@ -14391,7 +14391,7 @@ const W3: MarketingQuestion = {
   layer: "why",
   priority: 72,
   title: "What matters most in a tool?",
-  hint: "When two tools do the same thing, do you want the popular one, the newest one, or the easiest one?",
+  hint: "Trusted means industry standards like HubSpot or Mailchimp. New means emerging tools that may outperform but have less support.",
   parts: [
     {
       label: "Preference",
@@ -14433,7 +14433,7 @@ const W5: MarketingQuestion = {
   layer: "why",
   priority: 74,
   title: "One tool or many?",
-  hint: "Should we recommend one main AI tool for most steps, or pick the best specialist for each step?",
+  hint: "One tool means fewer subscriptions and less switching. Best-per-step means the strongest tool at each stage but more to manage.",
   parts: [
     {
       label: "Tool switching",
@@ -18743,7 +18743,7 @@ const ED_EDUCATION_QUESTIONS: ED_Question[] = [
   // ── Purpose compound ──
   {
     id: "SP", layer: "what", title: "What are you actually trying to do right now?", priority: 20,
-    hint: "Starting fresh, fixing something, reusing old material, or automating — each one builds a different roadmap.",
+    hint: "Building new materials starts at planning. Improving existing ones skips to the stage where things aren't working.",
     parts: [{ field: "purpose", type: "single", options: [
       ED_opt("Create", "create", "Build something new from scratch"),
       ED_opt("Improve", "improve", "Fix or improve something that isn't working"),
@@ -18754,7 +18754,7 @@ const ED_EDUCATION_QUESTIONS: ED_Question[] = [
   },
   {
     id: "SP-b", layer: "what", title: "Where exactly is it breaking down?", priority: 21,
-    hint: "Your roadmap will start right at this step — earlier stages are marked as done.",
+    hint: "Already past the planning phase? Pick where you're stuck and we'll skip everything before it.",
     parts: [{ field: "breakdownStage", type: "single", options: [] }],
     isRelevant: (a: any) => a.purpose === "improve",
   },
@@ -18767,7 +18767,7 @@ const ED_EDUCATION_QUESTIONS: ED_Question[] = [
   // ── HOW layer ──
   {
     id: "H1", layer: "how", title: "How comfortable are you with AI tools?", priority: 30,
-    hint: "Be honest — this decides whether we start at basics or skip ahead.",
+    hint: "If AI is new to you, we'll explain what each tool does before asking you to use it.",
     parts: [{ field: "aiComfort", type: "single", options: [
       ED_opt("Just starting out", "just_starting", "Never used ChatGPT, Gemini, or similar."), ED_opt("I've used a few", "used_a_few", "Tried AI tools a handful of times."), ED_opt("I use AI regularly", "every_day", "AI is already part of my daily workflow."),
     ]}],
@@ -18783,7 +18783,7 @@ const ED_EDUCATION_QUESTIONS: ED_Question[] = [
   },
   {
     id: "H3", layer: "how", title: "How much guidance do you want between steps?", priority: 32,
-    hint: "Should we spell out exactly what to copy and paste between tools, or just point you in the right direction?",
+    hint: "Full guidance tells you exactly what to paste from one tool into the next. Light guidance trusts you to connect the dots.",
     parts: [{ field: "handhold", type: "single", options: [
       ED_opt("Walk me through everything", "spell_it_out", "Step-by-step instructions with exact copy-paste directions."), ED_opt("Some guidance", "some_guidance", "Key instructions without spelling out every click."), ED_opt("Just point me to the tools", "just_the_tool", "Tool name and what to do — you'll figure out the rest."),
     ]}],
@@ -18791,7 +18791,7 @@ const ED_EDUCATION_QUESTIONS: ED_Question[] = [
   },
   {
     id: "H4", layer: "how", title: "How detailed should each step be?", priority: 33,
-    hint: "Quick overview gives you the action in 1–2 lines. Detailed adds full examples you can copy and follow.",
+    hint: "Short gives you the task in one sentence. Detailed adds a sample prompt or template you can use right away.",
     parts: [{ field: "depth", type: "single", options: [
       ED_opt("Quick overview", "short", "Just the key action and tool — 1–2 sentences per step."), ED_opt("Balanced", "balanced", "Clear instructions without overwhelming detail."), ED_opt("Detailed with examples", "detailed", "Full breakdown with worked examples at each step."),
     ]}],
@@ -18804,7 +18804,7 @@ const ED_EDUCATION_QUESTIONS: ED_Question[] = [
   // ── WHY layer ──
   {
     id: "W1", layer: "why", title: "What's your budget?", priority: 40,
-    hint: "Free-only shows tools with no paywall. A budget opens up premium tools with more features.",
+    hint: "Many great education tools are free. Paid ones like MagicSchool Pro or Canva Pro add templates and grading features.",
     parts: [
       { field: "budget", label: "Budget", type: "single", options: [ED_opt("Free only", "free", "Only tools with a permanent free plan."), ED_opt("Up to ~$25/month", "low", "Includes paid tools with reasonable pricing."), ED_opt("Flexible budget", "flexible", "Best tool for the job, regardless of price.")] },
       { field: "riskTolerance", label: "How new can the tool be?", type: "single", options: [ED_opt("Well-known and proven", "safe"), ED_opt("Open to newer tools", "experimental")] },
@@ -18813,7 +18813,7 @@ const ED_EDUCATION_QUESTIONS: ED_Question[] = [
   },
   {
     id: "W2", layer: "why", title: "Quality or speed?", priority: 41,
-    hint: "Quality picks slower, sharper tools. Speed picks fast, good-enough ones.",
+    hint: "Quality means better-crafted lesson materials even if prep takes longer. Speed means fast and ready for tomorrow.",
     parts: [{ field: "qualityVsSpeed", type: "single", options: [
       ED_opt("Quality first", "quality", "We'll pick sharper tools even if they take longer."), ED_opt("Balanced", "balanced", "A mix of quality and speed."), ED_opt("Speed first", "speed", "Fast output that's good enough to use."),
     ]}],
@@ -18821,7 +18821,7 @@ const ED_EDUCATION_QUESTIONS: ED_Question[] = [
   },
   {
     id: "W3", layer: "why", title: "What matters most in a tool?", priority: 42,
-    hint: "When two tools do the same thing, do you want the popular one, the newest one, or the easiest one?",
+    hint: "Trusted means tools other educators already rely on. New means recently launched with better features but less tested.",
     parts: [{ field: "toolPreference", type: "single", options: [
       ED_opt("Well-known and trusted", "familiar"), ED_opt("New and cutting-edge", "new_tools"), ED_opt("Easiest to learn", "easiest"),
     ]}],
@@ -18837,7 +18837,7 @@ const ED_EDUCATION_QUESTIONS: ED_Question[] = [
   },
   {
     id: "W5", layer: "why", title: "One tool or many?", priority: 44,
-    hint: "Should we recommend one main AI tool for most steps, or pick the best specialist for each step?",
+    hint: "One tool means less training — use ChatGPT for everything. Best-per-step means learning several tools but getting stronger results.",
     parts: [{ field: "toolSwitchPref", type: "single", options: [
       ED_opt("One main tool for everything", "single", "We'll maximize what your main AI can do."),
       ED_opt("Specialists when they're clearly better", "open", "Mostly one tool, but we'll swap in a specialist when it matters."),
@@ -24255,7 +24255,7 @@ const ST_STUDENTS_QUESTIONS: ST_Question[] = [
   // ── Purpose compound ──
   {
     id: "SP", layer: "what", title: "What's your approach right now?", priority: 20,
-    hint: "Starting fresh, fixing something, reusing old work, or automating — each one builds a different roadmap.",
+    hint: "If you already have a draft, we skip early steps and jump to where you're stuck. Starting fresh? We begin at research.",
     parts: [{ field: "purpose", type: "single", options: [
       ST_opt("Create", "create", "Start fresh on a new task or project"),
       ST_opt("Improve", "improve", "Fix or improve work already in progress"),
@@ -24289,7 +24289,7 @@ const ST_STUDENTS_QUESTIONS: ST_Question[] = [
   },
   {
     id: "H3", layer: "how", title: "How much guidance do you want between steps?", priority: 32,
-    hint: "Should we spell out exactly what to copy and paste between tools, or just point you in the right direction?",
+    hint: "Full hand-holding walks you through every paste and click. Light guidance just names the tool and the goal.",
     parts: [{ field: "handoffNeed", type: "single", options: [
       ST_opt("Walk me through everything", "high", "Step-by-step instructions with exact copy-paste directions."), ST_opt("Some guidance", "medium", "Key instructions without spelling out every click."), ST_opt("Just point me to the tools", "low", "Tool name and what to do — you'll figure out the rest."),
     ]}],
@@ -24297,7 +24297,7 @@ const ST_STUDENTS_QUESTIONS: ST_Question[] = [
   },
   {
     id: "H4", layer: "how", title: "How detailed should each step be?", priority: 33,
-    hint: "Quick overview gives you the action in 1–2 lines. Detailed adds full examples you can copy and follow.",
+    hint: "Short means one-liner instructions. Detailed means full worked-out examples you can follow along with.",
     parts: [{ field: "depth", type: "single", options: [
       ST_opt("Quick overview", "short", "Just the key action and tool — 1–2 sentences per step."), ST_opt("Balanced", "balanced", "Clear instructions without overwhelming detail."), ST_opt("Detailed with examples", "detailed", "Full breakdown with worked examples at each step."),
     ]}],
@@ -24310,7 +24310,7 @@ const ST_STUDENTS_QUESTIONS: ST_Question[] = [
   // ── WHY layer ──
   {
     id: "W1", layer: "why", title: "What's your budget?", priority: 40,
-    hint: "Free-only shows tools with no paywall. A budget opens up premium tools with more features.",
+    hint: "Free means only tools with no payment ever. Student discount unlocks tools with .edu pricing like Grammarly Premium.",
     parts: [
       { field: "budget", label: "Budget", type: "single", options: [ST_opt("Free only", "free", "Only tools with a permanent free plan."), ST_opt("Student discount okay", "student_discount", "Includes tools with .edu or student pricing."), ST_opt("Flexible budget", "flexible", "Best tool for the job, regardless of price.")] },
       { field: "riskTolerance", label: "How new can the tool be?", type: "single", options: [ST_opt("Well-known and proven", "safe"), ST_opt("Open to newer tools", "experimental")] },
@@ -24319,7 +24319,7 @@ const ST_STUDENTS_QUESTIONS: ST_Question[] = [
   },
   {
     id: "W2", layer: "why", title: "Quality or speed?", priority: 41,
-    hint: "Quality picks slower, sharper tools. Speed picks fast, good-enough ones.",
+    hint: "Quality means more polished results even if it takes longer. Speed means fast enough to meet a deadline tonight.",
     parts: [{ field: "qualityVsSpeed", type: "single", options: [
       ST_opt("Quality first", "quality", "We'll pick sharper tools even if they take longer."), ST_opt("Balanced", "balanced", "A mix of quality and speed."), ST_opt("Speed first", "speed", "Fast output that's good enough to use."),
     ]}],
@@ -24327,7 +24327,7 @@ const ST_STUDENTS_QUESTIONS: ST_Question[] = [
   },
   {
     id: "W3", layer: "why", title: "What matters most in a tool?", priority: 42,
-    hint: "When two tools do the same thing, do you want the popular one, the newest one, or the easiest one?",
+    hint: "Trusted means tools your classmates already use. New means recently launched with better features but less proven.",
     parts: [{ field: "toolPref", type: "single", options: [
       ST_opt("Well-known and trusted", "familiar"), ST_opt("New and cutting-edge", "new_tools"), ST_opt("Easiest to learn", "easiest"),
     ]}],
@@ -24346,7 +24346,7 @@ const ST_STUDENTS_QUESTIONS: ST_Question[] = [
   },
   {
     id: "W5", layer: "why", title: "One tool or many?", priority: 44,
-    hint: "Should we recommend one main AI tool for most steps, or pick the best specialist for each step?",
+    hint: "One tool means less to learn — like using ChatGPT for everything. Best-per-step means juggling several apps but getting better results.",
     parts: [{ field: "toolSwitchPref", type: "single", options: [
       ST_opt("One main tool for everything", "single", "We'll maximize what your main AI can do."),
       ST_opt("Specialists when they're clearly better", "open", "Mostly one tool, but we'll swap in a specialist when it matters."),

@@ -7207,7 +7207,7 @@ const QUESTIONS: Question[] = [
     layer: "deepen",
     field: "specialty",
     title: "Which style fits best?",
-    hint: "This decides your full step-by-step workflow and which tools we recommend.",
+    hint: "A talking-head vlog and a cinematic short film follow completely different production steps and tools.",
     type: "single",
     options: [], // injected from Q2_OPTIONS[family]
     priority: 20,
@@ -7257,7 +7257,7 @@ const QUESTIONS: Question[] = [
     layer: "what",
     field: "purpose",
     title: "What's your goal right now?",
-    hint: "This shapes the structure of your entire roadmap.",
+    hint: "Starting fresh, fixing a draft, reusing old content, or going on autopilot — each one builds a different roadmap.",
     type: "single",
     // Composite "purpose|pain". UI renders purpose row + pain row, submits joined.
     options: [
@@ -7302,7 +7302,7 @@ const QUESTIONS: Question[] = [
     layer: "how",
     field: "aiFamiliarity",
     title: "How comfortable are you with AI tools?",
-    hint: "We'll explain steps in more or less detail based on this.",
+    hint: "Never used AI? We'll walk you through every click. Use it daily? We'll skip the basics.",
     type: "single",
     options: [
       { label: "Just starting out", value: "beginner", hint: "Never used ChatGPT, Gemini, or similar." },
@@ -7351,7 +7351,7 @@ const QUESTIONS: Question[] = [
     layer: "how",
     field: "depth",
     title: "How detailed should each step be?",
-    hint: "This controls how every step in your roadmap looks.",
+    hint: "Quick overview gives you the action in 1–2 lines. Detailed adds full examples you can copy and follow.",
     type: "single",
     options: [
       { label: "Quick overview", value: "short", hint: "Just the key action and tool — 1–2 sentences per step." },
@@ -7370,7 +7370,7 @@ const QUESTIONS: Question[] = [
     layer: "why",
     field: "budget",
     title: "What's your budget?",
-    hint: "This filters which tools we recommend and how established they need to be.",
+    hint: "Free-only shows tools with no paywall. A budget opens up premium tools with more features.",
     type: "single",
     // Composite "budget|risk".
     options: [
@@ -7406,7 +7406,7 @@ const QUESTIONS: Question[] = [
     layer: "why",
     field: "stackPrefs",
     title: "What matters most in a tool?",
-    hint: "This helps us pick between similar tools. No wrong answer.",
+    hint: "When two tools do the same thing, do you want the popular one, the newest one, or the easiest one?",
     type: "single",
     options: [
       { label: "Well-known and trusted", value: "familiar", hint: "Established brands with large user bases." },
@@ -13580,7 +13580,7 @@ const PERF_1: MarketingQuestion = {
   layer: "what",
   priority: 10,
   title: "Your ad channels and campaign goals",
-  hint: "Where you advertise and what you're optimising for determines which AI tools apply.",
+  hint: "Google Ads vs. Meta vs. TikTok — each platform has its own AI tools for bidding, creative, and targeting.",
   parts: [
     {
       label: "Platform",
@@ -13688,7 +13688,7 @@ const EMAIL_1: MarketingQuestion = {
   layer: "what",
   priority: 10,
   title: "Your email platform and sending method",
-  hint: "We'll recommend tools that plug into what you already use.",
+  hint: "Klaviyo, Mailchimp, HubSpot — each has different AI features and integrations. We'll match the tools to yours.",
   parts: [
     {
       label: "Platform",
@@ -13720,7 +13720,7 @@ const EMAIL_2: MarketingQuestion = {
   layer: "what",
   priority: 11,
   title: "Your biggest email challenge and list size",
-  hint: "This tells us which part of your email workflow to focus the roadmap on.",
+  hint: "Low open rates, slow copy, or no automation — we'll focus the roadmap on fixing your biggest bottleneck.",
   parts: [
     {
       label: "Pain point",
@@ -13753,7 +13753,7 @@ const EMAIL_3: MarketingQuestion = {
   layer: "what",
   priority: 12,
   title: "Who designs your emails?",
-  hint: "If you're doing it yourself, we'll add design-assist tools to your roadmap.",
+    hint: "Building emails yourself? We'll add drag-and-drop design tools. Have a designer? We'll skip those.",
   parts: [
     {
       label: "Designer",
@@ -13778,7 +13778,7 @@ const SOCIAL_1: MarketingQuestion = {
   layer: "what",
   priority: 10,
   title: "Your main platform and content style",
-  hint: "Each platform has its own best-fit AI tools for creating and scheduling.",
+  hint: "Instagram vs. LinkedIn vs. TikTok — each one needs different content formats, posting tools, and strategies.",
   parts: [
     {
       label: "Platform",
@@ -13814,7 +13814,7 @@ const SOCIAL_2: MarketingQuestion = {
   layer: "what",
   priority: 11,
   title: "Your social goals and biggest pain point",
-  hint: "We'll focus your roadmap on fixing this specific bottleneck.",
+  hint: "Running out of ideas? Low engagement? Posting inconsistently? We'll focus on solving that first.",
   parts: [
     {
       label: "Purpose",
@@ -13876,7 +13876,7 @@ const BRAND_1: MarketingQuestion = {
   layer: "what",
   priority: 10,
   title: "Your brand stage and current focus",
-  hint: "Starting fresh vs. refreshing vs. scaling — each needs a different set of tools.",
+  hint: "Building a brand from zero, refreshing an old one, or scaling what works — each path has different steps.",
   parts: [
     {
       label: "Stage",
@@ -13945,7 +13945,7 @@ const CM_1: MarketingQuestion = {
   layer: "what",
   priority: 10,
   title: "Your content type and funnel stage",
-  hint: "Blog posts and videos need different creation tools; top-of-funnel and bottom-of-funnel need different strategies.",
+  hint: "Blog posts vs. videos, awareness vs. closing — the content type and where it fits in the buyer journey change the whole plan.",
   parts: [
     {
       label: "Content type",
@@ -13979,7 +13979,7 @@ const CM_2: MarketingQuestion = {
   layer: "what",
   priority: 11,
   title: "Where you publish and your biggest time sink",
-  hint: "We'll focus your roadmap on the step that eats the most time.",
+  hint: "Is writing too slow? Ideas running dry? Not converting? We'll target the step that's costing you the most time.",
   parts: [
     {
       label: "Distribution",
@@ -14014,7 +14014,7 @@ const CM_3: MarketingQuestion = {
   layer: "what",
   priority: 12,
   title: "Does this content need to rank in search?",
-  hint: "If yes, we'll add SEO steps to your content roadmap.",
+  hint: "If your content needs to show up in Google, we'll add keyword research, optimization, and tracking steps.",
   parts: [
     {
       label: "Search / AI visibility",
@@ -14043,7 +14043,7 @@ const AG_1: MarketingQuestion = {
   priority: 10,
   title:
     "What's the main focus of your analytics work, and how would you describe your current data setup?",
-  hint: "Your current setup determines which tools and integrations make sense.",
+  hint: "No tracking vs. full data stack — this decides whether we start with setup basics or jump to advanced analysis.",
   parts: [
     {
       label: "Focus",
@@ -14076,7 +14076,7 @@ const AG_2: MarketingQuestion = {
   layer: "what",
   priority: 11,
   title: "What's the biggest gap right now?",
-  hint: "We'll prioritise solving this first in your roadmap.",
+  hint: "Can't prove ROI? Reports too slow? Don't trust the data? We'll target that gap first.",
   parts: [
     {
       label: "Gap",
@@ -14104,7 +14104,7 @@ const SP: MarketingQuestion = {
   layer: "what",
   priority: 50,
   title: "What are you actually trying to do right now?",
-  hint: "This shapes the entire structure of your roadmap.",
+  hint: "Building from scratch, fixing something, reusing old work, or automating — each one builds a different roadmap.",
   parts: [
     {
       label: "Purpose",
@@ -14239,7 +14239,7 @@ const SP_C: MarketingQuestion = {
   layer: "what",
   priority: 52,
   title: "What do you have to work from?",
-  hint: "We'll build the roadmap around transforming this into a new format.",
+  hint: "Blog posts, old campaigns, video content — tell us what you have and we'll show you how to turn it into something new.",
   parts: [
     {
       label: "Source asset",
@@ -14323,7 +14323,7 @@ const H4: MarketingQuestion = {
   layer: "how",
   priority: 63,
   title: "How detailed should each step be?",
-  hint: "Detailed adds worked examples to every step. Short trims to the essentials.",
+  hint: "Quick overview gives you the action in 1–2 lines. Detailed adds full examples you can copy and follow.",
   parts: [
     {
       label: "Depth",
@@ -14351,7 +14351,7 @@ const W1: MarketingQuestion = {
   layer: "why",
   priority: 70,
   title: "What's your budget?",
-  hint: "This filters which tools we recommend and how established they need to be.",
+  hint: "Free-only shows tools with no paywall. A budget opens up premium tools with more features.",
   parts: [
     {
       label: "Budget",
@@ -14391,7 +14391,7 @@ const W3: MarketingQuestion = {
   layer: "why",
   priority: 72,
   title: "What matters most in a tool?",
-  hint: "This helps us pick between similar tools. No wrong answer.",
+  hint: "When two tools do the same thing, do you want the popular one, the newest one, or the easiest one?",
   parts: [
     {
       label: "Preference",
@@ -18550,7 +18550,7 @@ const ED_EDUCATION_QUESTIONS: ED_Question[] = [
   // ── WHO trunk ──
   {
     id: "E1", layer: "who", title: "What type of organization do you work in?", priority: 1,
-    hint: "This shapes which tools and compliance requirements apply.",
+    hint: "A K-12 teacher and a corporate trainer have very different rules, platforms, and tool options.",
     parts: [{ field: "orgType", type: "single", options: [
       ED_opt("K-12", "k12", "Elementary, middle, or high school"),
       ED_opt("Higher education", "higher_ed", "University, college, or community college"),
@@ -18562,7 +18562,7 @@ const ED_EDUCATION_QUESTIONS: ED_Question[] = [
   },
   {
     id: "E1b", layer: "who", title: "What type?", priority: 2,
-    hint: "This narrows down which tools and standards apply to your context.",
+    hint: "Public vs. private schools, or research vs. community colleges — each has different standards and platform access.",
     parts: [{ field: "orgSubType", type: "single", options: [] }],
     isRelevant: (a: any) => a.orgType === "k12" || a.orgType === "higher_ed",
     apply: (a: any, v: any) => {
@@ -18571,7 +18571,7 @@ const ED_EDUCATION_QUESTIONS: ED_Question[] = [
   },
   {
     id: "E2", layer: "who", title: "What subject area do you primarily work in?", priority: 3,
-    hint: "Different subjects benefit from different AI tools and content formats.",
+    hint: "A math teacher and a history teacher need completely different content creation and assessment tools.",
     parts: [{ field: "subject", type: "single", options: [
       ED_opt("STEM", "stem", "Science, technology, engineering, math"),
       ED_opt("Humanities", "humanities", "History, literature, philosophy, social sciences"),
@@ -18586,7 +18586,7 @@ const ED_EDUCATION_QUESTIONS: ED_Question[] = [
   },
   {
     id: "E3", layer: "who", title: "Who are your learners?", priority: 4,
-    hint: "Age group affects tone, complexity, and which platforms are appropriate.",
+    hint: "Content for 8-year-olds looks nothing like content for adult professionals — this sets the right tone and complexity.",
     parts: [{ field: "learners", type: "single", options: [
       ED_opt("Children 5–12", "children"), ED_opt("Adolescents 13–17", "adolescents"),
       ED_opt("Young adults 18–24", "young_adults"), ED_opt("Adult professionals", "adults"),
@@ -18596,7 +18596,7 @@ const ED_EDUCATION_QUESTIONS: ED_Question[] = [
   },
   {
     id: "E4", layer: "who", title: "How many learners do you typically work with?", priority: 5,
-    hint: "Larger groups benefit more from automation and batch tools.",
+    hint: "Grading 20 papers by hand is fine. Grading 500 needs automation — we'll match the tools to your scale.",
     parts: [{ field: "scale", type: "single", options: [
       ED_opt("Small (1–30)", "small"), ED_opt("Medium (31–200)", "medium"),
       ED_opt("Large (201–1,000)", "large"), ED_opt("Enterprise (1,000+)", "enterprise"),
@@ -18605,14 +18605,14 @@ const ED_EDUCATION_QUESTIONS: ED_Question[] = [
   },
   {
     id: "ES", layer: "who", title: "What area of education work are you focusing on right now?", priority: 6,
-    hint: "Your entire roadmap is built around this choice.",
+    hint: "Building lessons, designing training, grading, or publishing research — each one gets a completely different workflow.",
     parts: [{ field: "specialty", type: "single", options: ED_SPECIALTY_OPTIONS }],
     isRelevant: ED_always(),
   },
   // ── Branch context: CLD ──
   {
     id: "B1-CLD", layer: "what", title: "What type of learning material are you creating?", priority: 10,
-    hint: "Each format has different AI tools that work best for it.",
+    hint: "A lesson plan, a worksheet, and a video each need different creation tools and steps.",
     parts: [{ field: "b1Cld", type: "single", options: [
       ED_opt("Lesson plans", "lesson_plans"), ED_opt("Worksheets", "worksheets"),
       ED_opt("Presentations", "presentations"), ED_opt("Interactive activities", "interactive"),
@@ -18622,7 +18622,7 @@ const ED_EDUCATION_QUESTIONS: ED_Question[] = [
   },
   {
     id: "B2-CLD", layer: "what", title: "How do you deliver your teaching?", priority: 11,
-    hint: "Pick any that apply.",
+    hint: "In-person, online, or flipped — the delivery method changes which tools and formats work best.",
     parts: [{ field: "b2Cld", type: "multi", options: [
       ED_opt("In-person", "in_person"), ED_opt("Hybrid", "hybrid"), ED_opt("Online", "online"),
       ED_opt("Flipped", "flipped"), ED_opt("Asynchronous", "async"),
@@ -18631,7 +18631,7 @@ const ED_EDUCATION_QUESTIONS: ED_Question[] = [
   },
   {
     id: "B3-CLD", layer: "what", title: "Do you need to differentiate for multiple learner levels?", priority: 12,
-    hint: "Differentiation adds extra steps to adapt content for each level.",
+    hint: "If your class has mixed skill levels, we'll add steps to create adapted versions for each group.",
     parts: [{ field: "b3Cld", type: "single", options: [
       ED_opt("No", "no"), ED_opt("Yes, 2–3 levels", "yes_2_3"), ED_opt("Yes, significant differentiation", "yes_significant"),
     ]}],
@@ -18640,7 +18640,7 @@ const ED_EDUCATION_QUESTIONS: ED_Question[] = [
   // ── Branch context: IDL ──
   {
     id: "B1-IDL", layer: "what", title: "What type of training are you designing?", priority: 10,
-    hint: "Pick any that apply.",
+    hint: "Onboarding, compliance, and leadership training each need different structures and tools.",
     parts: [{ field: "b1Idl", type: "multi", options: [
       ED_opt("Onboarding", "onboarding"), ED_opt("Compliance", "compliance"),
       ED_opt("Skill development", "skill_dev"), ED_opt("Leadership", "leadership"),
@@ -18650,7 +18650,7 @@ const ED_EDUCATION_QUESTIONS: ED_Question[] = [
   },
   {
     id: "B2-IDL", layer: "what", title: "What platform or LMS will you deploy to?", priority: 11,
-    hint: "We'll recommend tools that export in formats your LMS accepts.",
+    hint: "Google Classroom, Canvas, Moodle — each accepts different file formats. We'll match the tools to yours.",
     parts: [{ field: "b2Idl", type: "single", options: [
       ED_opt("Google Classroom", "google_classroom"), ED_opt("Canvas", "canvas"),
       ED_opt("Moodle", "moodle"), ED_opt("Articulate", "articulate"),
@@ -18662,7 +18662,7 @@ const ED_EDUCATION_QUESTIONS: ED_Question[] = [
   // ── Branch context: AG ──
   {
     id: "B1-AG", layer: "what", title: "What types of assessment are you working on?", priority: 10,
-    hint: "Pick any that apply.",
+    hint: "Quick classroom checks, final exams, and rubric feedback each need different AI tools.",
     parts: [{ field: "b1Ag", type: "multi", options: [
       ED_opt("Formative", "formative"), ED_opt("Summative", "summative"),
       ED_opt("Performance-based", "performance"), ED_opt("Standardized test prep", "test_prep"),
@@ -18672,7 +18672,7 @@ const ED_EDUCATION_QUESTIONS: ED_Question[] = [
   },
   {
     id: "B2-AG", layer: "what", title: "How many submissions do you grade per cycle?", priority: 11,
-    hint: "Higher volume means stronger automation recommendations.",
+    hint: "Under 50 is manageable by hand. 500+ means you need AI-assisted grading and batch feedback tools.",
     parts: [{ field: "b2Ag", type: "single", options: [
       ED_opt("Under 50", "under_50"), ED_opt("50–150", "50_150"),
       ED_opt("150–500", "150_500"), ED_opt("500+", "500_plus"),
@@ -18682,7 +18682,7 @@ const ED_EDUCATION_QUESTIONS: ED_Question[] = [
   // ── Branch context: CD ──
   {
     id: "B1-CD", layer: "what", title: "What scope are you working at?", priority: 10,
-    hint: "Wider scope means more coordination steps in your roadmap.",
+    hint: "Designing one course is straightforward. A department-wide curriculum needs alignment, mapping, and review stages.",
     parts: [{ field: "b1Cd", type: "single", options: [
       ED_opt("Single course", "single_course"), ED_opt("Full program", "full_program"),
       ED_opt("Department-wide", "department"), ED_opt("Institution-wide", "institution"),
@@ -18691,7 +18691,7 @@ const ED_EDUCATION_QUESTIONS: ED_Question[] = [
   },
   {
     id: "B2-CD", layer: "what", title: "Which standards frameworks must you align to?", priority: 11,
-    hint: "Pick any that apply.",
+    hint: "Common Core, IB, state standards — we'll add alignment checks and mapping steps for the ones you need.",
     parts: [{ field: "b2Cd", type: "multi", options: [
       ED_opt("Common Core", "common_core"), ED_opt("NGSS", "ngss"),
       ED_opt("State-specific", "state"), ED_opt("IB", "ib"),
@@ -18702,7 +18702,7 @@ const ED_EDUCATION_QUESTIONS: ED_Question[] = [
   // ── Branch context: ARP ──
   {
     id: "B1-ARP", layer: "what", title: "What type of academic output are you working on?", priority: 10,
-    hint: "Each output type has different stages and formatting requirements.",
+    hint: "A journal article, a grant proposal, and a thesis each follow different structures and review processes.",
     parts: [{ field: "b1Arp", type: "single", options: [
       ED_opt("Journal article", "journal"), ED_opt("Conference paper", "conference"),
       ED_opt("Thesis", "thesis"), ED_opt("Book chapter", "book_chapter"),
@@ -18712,7 +18712,7 @@ const ED_EDUCATION_QUESTIONS: ED_Question[] = [
   },
   {
     id: "B2-ARP", layer: "what", title: "What research approach are you using?", priority: 11,
-    hint: "This determines which data analysis and writing tools we recommend.",
+    hint: "Quantitative research needs stats tools. Qualitative needs coding and thematic analysis. We'll match the workflow.",
     parts: [{ field: "b2Arp", type: "single", options: [
       ED_opt("Quantitative", "quantitative"), ED_opt("Qualitative", "qualitative"),
       ED_opt("Mixed methods", "mixed"), ED_opt("Theoretical", "theoretical"),
@@ -18722,7 +18722,7 @@ const ED_EDUCATION_QUESTIONS: ED_Question[] = [
   // ── Branch context: TPL ──
   {
     id: "B1-TPL", layer: "what", title: "What is your tutoring setup?", priority: 10,
-    hint: "Pick any that apply.",
+    hint: "One-on-one online, small groups, learning centers — each setup benefits from different scheduling and content tools.",
     parts: [{ field: "b1Tpl", type: "multi", options: [
       ED_opt("Private 1-on-1 in-person", "private_inperson"), ED_opt("Private 1-on-1 online", "private_online"),
       ED_opt("Small group", "small_group"), ED_opt("Learning center", "learning_center"),
@@ -18731,19 +18731,19 @@ const ED_EDUCATION_QUESTIONS: ED_Question[] = [
     isRelevant: ED_onSpecialty("tpl"),
   },
   {
-    id: "B2-TPL", layer: "what", title: "What are your primary instructional goals?", priority: 11,
-    hint: "Pick any that apply.",
+    id: "B2-TPL", layer: "what", title: "What are you helping your learners with?", priority: 11,
+    hint: "Are they catching up, getting ahead, preparing for a test, or learning in a different way? Pick all that apply.",
     parts: [{ field: "b2Tpl", type: "multi", options: [
-      ED_opt("Remediation", "remediation"), ED_opt("Exam prep", "exam_prep"),
-      ED_opt("Enrichment", "enrichment"), ED_opt("Learning differences", "learning_diff"),
-      ED_opt("Language / ESL", "esl"),
+      ED_opt("Catching up on missed or weak topics", "remediation"), ED_opt("Preparing for exams or tests", "exam_prep"),
+      ED_opt("Going beyond the standard curriculum", "enrichment"), ED_opt("Adapting for different learning needs", "learning_diff"),
+      ED_opt("Learning English or another language", "esl"),
     ]}],
     isRelevant: ED_onSpecialty("tpl"),
   },
   // ── Purpose compound ──
   {
     id: "SP", layer: "what", title: "What are you actually trying to do right now?", priority: 20,
-    hint: "This shapes the entire structure of your roadmap.",
+    hint: "Starting fresh, fixing something, reusing old material, or automating — each one builds a different roadmap.",
     parts: [{ field: "purpose", type: "single", options: [
       ED_opt("Create", "create", "Build something new from scratch"),
       ED_opt("Improve", "improve", "Fix or improve something that isn't working"),
@@ -18760,7 +18760,7 @@ const ED_EDUCATION_QUESTIONS: ED_Question[] = [
   },
   {
     id: "SP-c", layer: "what", title: "What do you have to work from?", priority: 22,
-    hint: "We'll build the roadmap around transforming this into a new format.",
+    hint: "Old lesson plans? Recorded lectures? Textbook content? We'll show you how to turn it into something new.",
     parts: [{ field: "sourceAsset", type: "single", options: [] }],
     isRelevant: (a: any) => a.purpose === "repurpose",
   },
@@ -18791,7 +18791,7 @@ const ED_EDUCATION_QUESTIONS: ED_Question[] = [
   },
   {
     id: "H4", layer: "how", title: "How detailed should each step be?", priority: 33,
-    hint: "This controls how every step in your roadmap looks.",
+    hint: "Quick overview gives you the action in 1–2 lines. Detailed adds full examples you can copy and follow.",
     parts: [{ field: "depth", type: "single", options: [
       ED_opt("Quick overview", "short", "Just the key action and tool — 1–2 sentences per step."), ED_opt("Balanced", "balanced", "Clear instructions without overwhelming detail."), ED_opt("Detailed with examples", "detailed", "Full breakdown with worked examples at each step."),
     ]}],
@@ -18804,7 +18804,7 @@ const ED_EDUCATION_QUESTIONS: ED_Question[] = [
   // ── WHY layer ──
   {
     id: "W1", layer: "why", title: "What's your budget?", priority: 40,
-    hint: "This filters which tools we recommend and how established they need to be.",
+    hint: "Free-only shows tools with no paywall. A budget opens up premium tools with more features.",
     parts: [
       { field: "budget", label: "Budget", type: "single", options: [ED_opt("Free only", "free", "Only tools with a permanent free plan."), ED_opt("Up to ~$25/month", "low", "Includes paid tools with reasonable pricing."), ED_opt("Flexible budget", "flexible", "Best tool for the job, regardless of price.")] },
       { field: "riskTolerance", label: "How new can the tool be?", type: "single", options: [ED_opt("Well-known and proven", "safe"), ED_opt("Open to newer tools", "experimental")] },
@@ -18821,7 +18821,7 @@ const ED_EDUCATION_QUESTIONS: ED_Question[] = [
   },
   {
     id: "W3", layer: "why", title: "What matters most in a tool?", priority: 42,
-    hint: "This helps us pick between similar tools. No wrong answer.",
+    hint: "When two tools do the same thing, do you want the popular one, the newest one, or the easiest one?",
     parts: [{ field: "toolPreference", type: "single", options: [
       ED_opt("Well-known and trusted", "familiar"), ED_opt("New and cutting-edge", "new_tools"), ED_opt("Easiest to learn", "easiest"),
     ]}],
@@ -24094,7 +24094,7 @@ const ST_STUDENTS_QUESTIONS: ST_Question[] = [
   // ── WHO trunk ──
   {
     id: "S1", layer: "who", title: "What level of education are you at?", priority: 1,
-    hint: "This affects which tools and study methods we recommend.",
+    hint: "A high schooler and a grad student need very different tools and study approaches.",
     parts: [{ field: "level", type: "single", options: [
       ST_opt("High school", "high_school"), ST_opt("Undergraduate", "undergrad"),
       ST_opt("Graduate", "graduate"), ST_opt("Self-learner", "self_learner"),
@@ -24103,7 +24103,7 @@ const ST_STUDENTS_QUESTIONS: ST_Question[] = [
   },
   {
     id: "S2", layer: "who", title: "What subject area are you studying?", priority: 2,
-    hint: "Different subjects benefit from different AI tools.",
+    hint: "A chemistry student and an English major use completely different AI tools — this makes sure you get the right ones.",
     parts: [{ field: "subject", type: "single", options: [
       ST_opt("Science", "science", "Biology, chemistry, physics, math, environmental"),
       ST_opt("Engineering", "engineering", "Mechanical, electrical, civil, architecture, computer"),
@@ -24118,20 +24118,20 @@ const ST_STUDENTS_QUESTIONS: ST_Question[] = [
   },
   {
     id: "S2b", layer: "who", title: "Which specific topic?", priority: 3,
-    hint: "This lets us tailor examples and tools to your exact subject.",
+    hint: "For example, physics vs. biology — even within science, the best tools are different.",
     parts: [{ field: "specificTopic", type: "single", options: [] }],
     isRelevant: (a: any) => !!a.subject && !!ST_S2B_OPTIONS[a.subject],
   },
   {
     id: "SF", layer: "who", title: "What are you trying to do right now?", priority: 4,
-    hint: "This determines your entire roadmap.",
+    hint: "Writing a paper, studying for exams, solving problems — each one gets a completely different set of steps and tools.",
     parts: [{ field: "focusArea", type: "single", options: ST_FOCUS_OPTIONS }],
     isRelevant: ST_always(),
   },
   // ── Branch context: RW ──
   {
     id: "B1-RW", layer: "what", title: "What type of writing?", priority: 10,
-    hint: "Each format has its own structure and AI tools that work best.",
+    hint: "An essay, a lab report, and a thesis each follow different structures — we'll match the workflow to yours.",
     parts: [{ field: "b1Rw", type: "single", options: [
       ST_opt("Essay", "essay"), ST_opt("Research paper", "research_paper"), ST_opt("Report", "report"),
       ST_opt("Thesis / dissertation", "thesis"), ST_opt("Lab report", "lab_report"), ST_opt("Creative writing", "creative"),
@@ -24140,7 +24140,7 @@ const ST_STUDENTS_QUESTIONS: ST_Question[] = [
   },
   {
     id: "B2-RW", layer: "what", title: "How long is the final piece?", priority: 11,
-    hint: "Longer pieces need more planning stages in your roadmap.",
+    hint: "A short essay can go straight to drafting, but a thesis needs outlining, research, and revision stages.",
     parts: [{ field: "b2Rw", type: "single", options: [
       ST_opt("Short (under 1,000 words)", "short"), ST_opt("Medium (1,000–5,000)", "medium"),
       ST_opt("Long (5,000–15,000)", "long"), ST_opt("Very long (15,000+)", "very_long"),
@@ -24149,7 +24149,7 @@ const ST_STUDENTS_QUESTIONS: ST_Question[] = [
   },
   {
     id: "B3-RW", layer: "what", title: "Citation style required?", priority: 12,
-    hint: "We'll recommend citation tools that match your required format.",
+    hint: "APA, MLA, Chicago — each has different rules. We'll suggest tools that handle yours automatically.",
     parts: [{ field: "b3Rw", type: "single", options: [
       ST_opt("APA", "apa"), ST_opt("MLA", "mla"), ST_opt("Chicago", "chicago"),
       ST_opt("Harvard", "harvard"), ST_opt("IEEE", "ieee"), ST_opt("Not sure / none", "none"),
@@ -24159,7 +24159,7 @@ const ST_STUDENTS_QUESTIONS: ST_Question[] = [
   // ── Branch context: SE ──
   {
     id: "B1-SE", layer: "what", title: "What are you studying for?", priority: 10,
-    hint: "Different exams benefit from different study strategies and tools.",
+    hint: "Cramming for a final vs. prepping for the SAT — the study plan and tools are completely different.",
     parts: [{ field: "b1Se", type: "single", options: [
       ST_opt("Regular class tests", "class_tests"), ST_opt("Midterms", "midterms"),
       ST_opt("Finals", "finals"), ST_opt("Standardized test", "standardized"),
@@ -24169,7 +24169,7 @@ const ST_STUDENTS_QUESTIONS: ST_Question[] = [
   },
   {
     id: "B2-SE", layer: "what", title: "How much time until your exam?", priority: 11,
-    hint: "Less time means a more focused, intensive study plan.",
+    hint: "Under a week? We'll cut straight to the highest-impact review. Months away? We'll build a steady plan.",
     parts: [{ field: "b2Se", type: "single", options: [
       ST_opt("Less than a week", "under_week"), ST_opt("1–4 weeks", "1_4_weeks"),
       ST_opt("1–3 months", "1_3_months"), ST_opt("3+ months", "3_plus_months"),
@@ -24179,7 +24179,7 @@ const ST_STUDENTS_QUESTIONS: ST_Question[] = [
   // ── Branch context: PS ──
   {
     id: "B1-PS", layer: "what", title: "What type of problem?", priority: 10,
-    hint: "Math, coding, and logic problems each have specialised AI tools.",
+    hint: "A calculus equation and a coding bug need completely different solvers — pick what you're working on.",
     parts: [{ field: "b1Ps", type: "single", options: [
       ST_opt("Math / calculation", "math"), ST_opt("Science / lab", "science"),
       ST_opt("Coding / programming", "coding"), ST_opt("Logic / reasoning", "logic"),
@@ -24190,7 +24190,7 @@ const ST_STUDENTS_QUESTIONS: ST_Question[] = [
   // ── Branch context: PA ──
   {
     id: "B1-PA", layer: "what", title: "What kind of project?", priority: 10,
-    hint: "The project type decides which planning and creation tools fit.",
+    hint: "A group presentation and a solo capstone need very different planning and production steps.",
     parts: [{ field: "b1Pa", type: "single", options: [
       ST_opt("Research project", "research"), ST_opt("Group project", "group"),
       ST_opt("Presentation", "presentation"), ST_opt("Portfolio", "portfolio"),
@@ -24200,7 +24200,7 @@ const ST_STUDENTS_QUESTIONS: ST_Question[] = [
   },
   {
     id: "B2-PA", layer: "what", title: "Working alone or in a team?", priority: 11,
-    hint: "Team projects unlock collaboration and coordination tools.",
+    hint: "Solo work is self-paced. Teams need shared docs, task splitting, and coordination tools.",
     parts: [{ field: "b2Pa", type: "single", options: [
       ST_opt("Solo", "solo"), ST_opt("Small team (2–4)", "small_team"), ST_opt("Large team (5+)", "large_team"),
     ]}],
@@ -24209,7 +24209,7 @@ const ST_STUDENTS_QUESTIONS: ST_Question[] = [
   // ── Branch context: LL ──
   {
     id: "B1-LL", layer: "what", title: "Which language are you learning?", priority: 10,
-    hint: "Languages are grouped by the tools and platforms that work best for them.",
+    hint: "Spanish and Japanese need completely different apps — Spanish has dozens, Japanese needs character-specific tools.",
     parts: [{ field: "b1Ll", type: "single", options: [
       ST_opt("English / ESL", "english", "Widely supported on all major platforms"),
       ST_opt("Spanish / French / German / Italian / Portuguese", "western_european", "Shared platforms — Duolingo, Babbel, Busuu, etc."),
@@ -24221,7 +24221,7 @@ const ST_STUDENTS_QUESTIONS: ST_Question[] = [
   },
   {
     id: "B2-LL", layer: "what", title: "What's your current level?", priority: 11,
-    hint: "Beginner and advanced learners benefit from very different tools.",
+    hint: "A complete beginner needs basics like alphabet and phrases. Advanced learners need conversation practice and nuance.",
     parts: [{ field: "b2Ll", type: "single", options: [
       ST_opt("Complete beginner", "beginner"), ST_opt("Elementary (A1–A2)", "elementary"),
       ST_opt("Intermediate (B1–B2)", "intermediate"), ST_opt("Advanced (C1+)", "advanced"),
@@ -24230,7 +24230,7 @@ const ST_STUDENTS_QUESTIONS: ST_Question[] = [
   },
   {
     id: "B3-LL", layer: "what", title: "Which skills do you want to focus on?", priority: 12,
-    hint: "Pick any that apply.",
+    hint: "Speaking, writing, reading — each skill uses different practice tools. Pick all the ones you want to work on.",
     parts: [{ field: "b3Ll", type: "multi", options: [
       ST_opt("Speaking", "speaking"), ST_opt("Listening", "listening"),
       ST_opt("Reading", "reading"), ST_opt("Writing", "writing"),
@@ -24241,7 +24241,7 @@ const ST_STUDENTS_QUESTIONS: ST_Question[] = [
   // ── Branch context: SD ──
   {
     id: "B1-SD", layer: "what", title: "Where are you in your career journey?", priority: 10,
-    hint: "This activates specific stages of your roadmap.",
+    hint: "Still exploring careers? Prepping for interviews? Building a resume? Each stage needs different tools and steps.",
     parts: [{ field: "b1Sd", type: "single", options: [
       ST_opt("Exploring options", "exploring"), ST_opt("Learning new skills", "learning"),
       ST_opt("Getting certified", "certification"), ST_opt("Test / exam preparation", "test_prep", "SAT, GRE, GMAT, MCAT, LSAT, TOEFL, AP, etc."),
@@ -24255,7 +24255,7 @@ const ST_STUDENTS_QUESTIONS: ST_Question[] = [
   // ── Purpose compound ──
   {
     id: "SP", layer: "what", title: "What's your approach right now?", priority: 20,
-    hint: "This shapes the entire structure of your roadmap.",
+    hint: "Starting fresh, fixing something, reusing old work, or automating — each one builds a different roadmap.",
     parts: [{ field: "purpose", type: "single", options: [
       ST_opt("Create", "create", "Start fresh on a new task or project"),
       ST_opt("Improve", "improve", "Fix or improve work already in progress"),
@@ -24297,7 +24297,7 @@ const ST_STUDENTS_QUESTIONS: ST_Question[] = [
   },
   {
     id: "H4", layer: "how", title: "How detailed should each step be?", priority: 33,
-    hint: "This controls how every step in your roadmap looks.",
+    hint: "Quick overview gives you the action in 1–2 lines. Detailed adds full examples you can copy and follow.",
     parts: [{ field: "depth", type: "single", options: [
       ST_opt("Quick overview", "short", "Just the key action and tool — 1–2 sentences per step."), ST_opt("Balanced", "balanced", "Clear instructions without overwhelming detail."), ST_opt("Detailed with examples", "detailed", "Full breakdown with worked examples at each step."),
     ]}],
@@ -24310,7 +24310,7 @@ const ST_STUDENTS_QUESTIONS: ST_Question[] = [
   // ── WHY layer ──
   {
     id: "W1", layer: "why", title: "What's your budget?", priority: 40,
-    hint: "This filters which tools we recommend and how established they need to be.",
+    hint: "Free-only shows tools with no paywall. A budget opens up premium tools with more features.",
     parts: [
       { field: "budget", label: "Budget", type: "single", options: [ST_opt("Free only", "free", "Only tools with a permanent free plan."), ST_opt("Student discount okay", "student_discount", "Includes tools with .edu or student pricing."), ST_opt("Flexible budget", "flexible", "Best tool for the job, regardless of price.")] },
       { field: "riskTolerance", label: "How new can the tool be?", type: "single", options: [ST_opt("Well-known and proven", "safe"), ST_opt("Open to newer tools", "experimental")] },
@@ -24327,7 +24327,7 @@ const ST_STUDENTS_QUESTIONS: ST_Question[] = [
   },
   {
     id: "W3", layer: "why", title: "What matters most in a tool?", priority: 42,
-    hint: "This helps us pick between similar tools. No wrong answer.",
+    hint: "When two tools do the same thing, do you want the popular one, the newest one, or the easiest one?",
     parts: [{ field: "toolPref", type: "single", options: [
       ST_opt("Well-known and trusted", "familiar"), ST_opt("New and cutting-edge", "new_tools"), ST_opt("Easiest to learn", "easiest"),
     ]}],

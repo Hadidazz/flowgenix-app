@@ -7256,15 +7256,15 @@ const QUESTIONS: Question[] = [
     id: "Q5",
     layer: "what",
     field: "purpose",
-    title: "Why are you doing this — and what's the headache?",
-    hint: "The reason shapes your workflow; the headache tells us what to optimize for.",
+    title: "What's your goal right now?",
+    hint: "This shapes the structure of your entire roadmap.",
     type: "single",
     // Composite "purpose|pain". UI renders purpose row + pain row, submits joined.
     options: [
-      { label: "Starting from scratch", value: "create|save_time" },
-      { label: "Fixing something I already have", value: "improve|improve_quality" },
-      { label: "Turning old content into something new", value: "repurpose|save_time" },
-      { label: "Making it run on autopilot", value: "automate|reduce_effort" },
+      { label: "Starting from scratch", value: "create|save_time", hint: "I need to create something new from the ground up." },
+      { label: "Improving something I already have", value: "improve|improve_quality", hint: "I have a draft or existing piece that needs work." },
+      { label: "Turning old content into something new", value: "repurpose|save_time", hint: "Reuse existing content in a different format." },
+      { label: "Making it run on autopilot", value: "automate|reduce_effort", hint: "Set up a system that keeps producing without manual effort." },
     ],
     priority: 50,
     isRelevant: (s) => !!s.specialty && !s.purpose,
@@ -7290,7 +7290,7 @@ const QUESTIONS: Question[] = [
     layer: "what",
     field: "painStage",
     title: "Where exactly are you stuck?",
-    hint: "We'll start your roadmap right where the pain is.",
+    hint: "Your roadmap will start right at this step — earlier stages are marked as done.",
     type: "single",
     options: [], // injected family-aware
     priority: 60,
@@ -7305,9 +7305,9 @@ const QUESTIONS: Question[] = [
     hint: "We'll explain steps in more or less detail based on this.",
     type: "single",
     options: [
-      { label: "Just starting out", value: "beginner" },
-      { label: "I've used a few", value: "intermediate" },
-      { label: "I use AI regularly", value: "advanced" },
+      { label: "Just starting out", value: "beginner", hint: "Never used ChatGPT, Gemini, or similar." },
+      { label: "I've used a few", value: "intermediate", hint: "Tried AI tools a handful of times." },
+      { label: "I use AI regularly", value: "advanced", hint: "AI is already part of my daily workflow." },
     ],
     priority: 70,
     isRelevant: (s) => !!s.specialty && !s.aiFamiliarity,
@@ -7331,13 +7331,13 @@ const QUESTIONS: Question[] = [
     id: "Q9",
     layer: "how",
     field: "handoffNeed",
-    title: "How much hand-holding do you want between tools?",
-    hint: "How clearly should we spell out 'copy this from here → paste it into there'?",
+    title: "How much guidance do you want between steps?",
+    hint: "Should we spell out exactly what to copy and paste between tools, or just point you in the right direction?",
     type: "single",
     options: [
-      { label: "Walk me through everything", value: "high" },
-      { label: "Some guidance", value: "medium" },
-      { label: "Just point me to the tools", value: "low" },
+      { label: "Walk me through everything", value: "high", hint: "Step-by-step instructions with exact copy-paste directions." },
+      { label: "Some guidance", value: "medium", hint: "Key instructions without spelling out every click." },
+      { label: "Just point me to the tools", value: "low", hint: "Tool name and what to do — you'll figure out the rest." },
     ],
     priority: 90,
     // Skippable if Advanced AND niche-expert (spec §8).
@@ -7369,14 +7369,14 @@ const QUESTIONS: Question[] = [
     id: "Q11",
     layer: "why",
     field: "budget",
-    title: "Budget and risk tolerance?",
-    hint: "'Free' keeps recommendations free. 'Proven' filters out newer, less tested tools.",
+    title: "What's your budget?",
+    hint: "This filters which tools we recommend and how established they need to be.",
     type: "single",
     // Composite "budget|risk".
     options: [
-      { label: "Free only · proven and trusted", value: "free|safe" },
-      { label: "Up to ~$25/month · open to trying new tools", value: "low|mixed" },
-      { label: "Flexible budget · open to trying new tools", value: "flexible|experimental" },
+      { label: "Free only · well-known tools", value: "free|safe", hint: "Only tools with a permanent free plan from trusted brands." },
+      { label: "Up to ~$25/month · open to newer tools", value: "low|mixed", hint: "Includes paid tools and some newer options." },
+      { label: "Flexible budget · open to anything", value: "flexible|experimental", hint: "Best tool for the job, regardless of price or how new it is." },
     ],
     priority: 110,
     isRelevant: (s) => !!s.specialty && !s.budget,
@@ -7405,13 +7405,13 @@ const QUESTIONS: Question[] = [
     id: "Q13",
     layer: "why",
     field: "stackPrefs",
-    title: "What kind of tools do you prefer?",
-    hint: "Pick what matters most. Skip if you don't mind either way.",
+    title: "What matters most in a tool?",
+    hint: "This helps us pick between similar tools. No wrong answer.",
     type: "single",
     options: [
-      { label: "Familiar, trusted brands", value: "familiar" },
-      { label: "Open to new tools", value: "new" },
-      { label: "Easiest to learn", value: "easy" },
+      { label: "Well-known and trusted", value: "familiar", hint: "Established brands with large user bases." },
+      { label: "New and cutting-edge", value: "new", hint: "Newer tools that might be better but less proven." },
+      { label: "Easiest to learn", value: "easy", hint: "Simple interface, quick to get started." },
     ],
     priority: 130,
     isRelevant: (s) => !!s.specialty && !s.stackPrefs,
@@ -7924,8 +7924,15 @@ function buildHowText(ctx: HowTextContext): string {
   const closing = buildClosing(ctx); // C7
   const w5tip = buildW5Tip(ctx); // C8
 
-  // opening already ends in a space/colon; core is a bare lowercase imperative.
-  return (opening + core + depth + example + handoff + closing + w5tip).replace(/\s+/g, " ").trim();
+  const mainLine = (opening + core).replace(/\s+/g, " ").trim();
+  const sections: string[] = [mainLine];
+  if (depth.trim()) sections.push(depth.trim());
+  if (example.trim()) sections.push(example.trim());
+  if (closing.trim()) sections.push(closing.trim());
+  if (handoff.trim()) sections.push(handoff.trim());
+  if (w5tip.trim()) sections.push(w5tip.trim());
+
+  return sections.join("\n");
 }
 
 
@@ -14278,11 +14285,11 @@ const H3: MarketingQuestion = {
   id: "H3",
   layer: "how",
   priority: 62,
-  title: "How much hand-holding do you want between tools?",
-  hint: "How clearly should we spell out 'copy this from here → paste it into there'?",
+  title: "How much guidance do you want between steps?",
+  hint: "Should we spell out exactly what to copy and paste between tools, or just point you in the right direction?",
   parts: [
     {
-      label: "Hand-holding",
+      label: "Guidance level",
       field: "handhold",
       type: "single",
       options: [
@@ -14327,8 +14334,8 @@ const W1: MarketingQuestion = {
   id: "W1",
   layer: "why",
   priority: 70,
-  title: "Budget and risk tolerance?",
-  hint: "'Free' keeps recommendations free. 'Proven' filters out newer, less tested tools.",
+  title: "What's your budget?",
+  hint: "This filters which tools we recommend and how established they need to be.",
   parts: [
     {
       label: "Budget",
@@ -14337,10 +14344,10 @@ const W1: MarketingQuestion = {
       options: [opt("Free only", "free"), opt("Up to ~$25/month", "low"), opt("Flexible budget", "flexible")],
     },
     {
-      label: "Risk tolerance",
+      label: "How new can the tool be?",
       field: "riskTolerance",
       type: "single",
-      options: [opt("Proven and trusted", "safe"), opt("Open to trying new tools", "experimental")],
+      options: [opt("Well-known and proven", "safe"), opt("Open to newer tools", "experimental")],
     },
   ],
   isRelevant: always,
@@ -14367,16 +14374,16 @@ const W3: MarketingQuestion = {
   id: "W3",
   layer: "why",
   priority: 72,
-  title: "What kind of tools do you prefer?",
-  hint: "Pick what matters most. Skip if you don't mind either way.",
+  title: "What matters most in a tool?",
+  hint: "This helps us pick between similar tools. No wrong answer.",
   parts: [
     {
       label: "Preference",
       field: "toolPreference",
       type: "single",
       options: [
-        opt("Familiar, trusted brands", "familiar"),
-        opt("Open to new tools", "new"),
+        opt("Well-known and trusted", "familiar"),
+        opt("New and cutting-edge", "new"),
         opt("Easiest to learn", "easiest"),
       ],
     },
@@ -14409,8 +14416,8 @@ const W5: MarketingQuestion = {
   id: "W5",
   layer: "why",
   priority: 74,
-  title: "How do you feel about switching between different AI tools?",
-  hint: "No wrong answer. 'One tool' means we'll maximize what your main AI can do. 'Best tool' means we'll pick specialists even if it means learning new ones.",
+  title: "One tool or many?",
+  hint: "Should we recommend one main AI tool for most steps, or pick the best specialist for each step?",
   parts: [
     {
       label: "Tool switching",
@@ -14870,23 +14877,25 @@ function w5Tip(answers?: MarketingAnswers): string {
   return "";
 }
 
-/** Compose the components into one paragraph at the requested depth. */
+/** Compose the components into structured lines at the requested depth. */
 function renderHowText(
   c: HowComponents,
   depth: MarketingAnswers["depth"] = "balanced",
   answers?: MarketingAnswers,
 ): string {
   const tip = w5Tip(answers);
+  let sections: string[];
   if (depth === "short") {
-    return [c.context, c.action].join(" ") + tip;
+    sections = [c.context, c.action].filter(Boolean);
+  } else if (depth === "balanced") {
+    sections = [c.context, c.action, c.handoff, c.watchOut].filter(Boolean);
+  } else {
+    sections = [c.context, c.setup, c.inputs, c.action, c.output, c.handoff, c.watchOut];
+    if (c.example) sections.push(c.example);
+    sections = sections.filter(Boolean);
   }
-  if (depth === "balanced") {
-    return [c.context, c.action, c.handoff, c.watchOut].join(" ") + tip;
-  }
-  // detailed
-  const parts = [c.context, c.setup, c.inputs, c.action, c.output, c.handoff, c.watchOut];
-  if (c.example) parts.push(c.example);
-  return parts.join(" ") + tip;
+  if (tip.trim()) sections.push(tip.trim());
+  return sections.join("\n");
 }
 
 
@@ -18735,8 +18744,8 @@ const ED_EDUCATION_QUESTIONS: ED_Question[] = [
     isRelevant: ED_always(),
   },
   {
-    id: "H3", layer: "how", title: "How much hand-holding do you want between tools?", priority: 32,
-    hint: "How clearly should we spell out 'copy this from here → paste it into there'?",
+    id: "H3", layer: "how", title: "How much guidance do you want between steps?", priority: 32,
+    hint: "Should we spell out exactly what to copy and paste between tools, or just point you in the right direction?",
     parts: [{ field: "handhold", type: "single", options: [
       ED_opt("Walk me through everything", "spell_it_out"), ED_opt("Some guidance", "some_guidance"), ED_opt("Just point me to the tools", "just_the_tool"),
     ]}],
@@ -18756,11 +18765,11 @@ const ED_EDUCATION_QUESTIONS: ED_Question[] = [
   },
   // ── WHY layer ──
   {
-    id: "W1", layer: "why", title: "Budget and risk tolerance?", priority: 40,
-    hint: "'Free' keeps recommendations free. 'Proven' filters out newer, less tested tools.",
+    id: "W1", layer: "why", title: "What's your budget?", priority: 40,
+    hint: "This filters which tools we recommend and how established they need to be.",
     parts: [
       { field: "budget", label: "Budget", type: "single", options: [ED_opt("Free only", "free"), ED_opt("Up to ~$25/month", "low"), ED_opt("Flexible budget", "flexible")] },
-      { field: "riskTolerance", label: "Risk", type: "single", options: [ED_opt("Proven and trusted", "safe"), ED_opt("Open to trying new tools", "experimental")] },
+      { field: "riskTolerance", label: "How new can the tool be?", type: "single", options: [ED_opt("Well-known and proven", "safe"), ED_opt("Open to newer tools", "experimental")] },
     ],
     isRelevant: ED_always(),
   },
@@ -18773,10 +18782,10 @@ const ED_EDUCATION_QUESTIONS: ED_Question[] = [
     isRelevant: ED_always(),
   },
   {
-    id: "W3", layer: "why", title: "What kind of tools do you prefer?", priority: 42,
-    hint: "Pick what matters most. Skip if you don't mind either way.",
+    id: "W3", layer: "why", title: "What matters most in a tool?", priority: 42,
+    hint: "This helps us pick between similar tools. No wrong answer.",
     parts: [{ field: "toolPreference", type: "single", options: [
-      ED_opt("Familiar, trusted brands", "familiar"), ED_opt("Open to new tools", "new_tools"), ED_opt("Easiest to learn", "easiest"),
+      ED_opt("Well-known and trusted", "familiar"), ED_opt("New and cutting-edge", "new_tools"), ED_opt("Easiest to learn", "easiest"),
     ]}],
     isRelevant: (a: any) => !(a.budget === "free" && a.riskTolerance === "safe"),
   },
@@ -18789,8 +18798,8 @@ const ED_EDUCATION_QUESTIONS: ED_Question[] = [
     isRelevant: ED_always(),
   },
   {
-    id: "W5", layer: "why", title: "How do you feel about switching between different AI tools?", priority: 44,
-    hint: "No wrong answer. 'One tool' means we'll maximize what your main AI can do. 'Best tool' means we'll pick specialists even if it means learning new ones.",
+    id: "W5", layer: "why", title: "One tool or many?", priority: 44,
+    hint: "Should we recommend one main AI tool for most steps, or pick the best specialist for each step?",
     parts: [{ field: "toolSwitchPref", type: "single", options: [
       ED_opt("I prefer sticking to one main tool for everything", "single"),
       ED_opt("I'm open to specialists when they're clearly better", "open"),
@@ -18961,17 +18970,17 @@ function ED_buildHowComponents(stage: ED_Stage, tool: ED_ToolProfile, nextStage:
 
 function ED_renderHowText(components: any, depth: string, answers?: any): string {
   if (!components) return "";
-  let text: string;
-  if (depth === "short") text = `${components.context} ${components.action}`;
+  let sections: string[];
+  if (depth === "short") sections = [components.context, components.action].filter(Boolean);
   else if (depth === "detailed") {
-    text = [components.context, components.setup, components.inputs, components.action, components.output, components.handoff, components.watchOut, components.example]
-      .filter(Boolean).join("\n\n");
+    sections = [components.context, components.setup, components.inputs, components.action, components.output, components.handoff, components.watchOut, components.example]
+      .filter(Boolean);
   } else {
-    text = [components.context, components.setup, components.action, components.handoff].filter(Boolean).join("\n\n");
+    sections = [components.context, components.setup, components.action, components.handoff].filter(Boolean);
   }
-  if (answers?.toolSwitchPref === "single") text += "\n\nTip: You can do this step in your main AI tool instead of a specialist — ask it directly.";
-  if (answers?.toolSwitchPref === "best") text += "\n\nThis is a specialist tool picked for this exact stage — it'll outperform a general AI here.";
-  return text;
+  if (answers?.toolSwitchPref === "single") sections.push("Tip: You can do this step in your main AI tool instead of a specialist — ask it directly.");
+  if (answers?.toolSwitchPref === "best") sections.push("This is a specialist tool picked for this exact stage — it'll outperform a general AI here.");
+  return sections.join("\n");
 }
 
 
@@ -24058,8 +24067,12 @@ const ST_STUDENTS_QUESTIONS: ST_Question[] = [
     parts: [{ field: "subject", type: "single", options: [
       ST_opt("Science", "science", "Biology, chemistry, physics, math, environmental"),
       ST_opt("Engineering", "engineering", "Mechanical, electrical, civil, architecture, computer"),
-      ST_opt("Computer Science", "cs"), ST_opt("Humanities", "humanities"), ST_opt("Business", "business"),
-      ST_opt("Health / Medical", "health"), ST_opt("Arts", "arts"), ST_opt("Other", "other"),
+      ST_opt("Computer Science", "cs", "Programming, data science, cybersecurity, AI"),
+      ST_opt("Humanities", "humanities", "History, philosophy, literature, languages, sociology"),
+      ST_opt("Business", "business", "Accounting, economics, management, marketing, finance"),
+      ST_opt("Health / Medical", "health", "Nursing, pre-med, public health, pharmacy"),
+      ST_opt("Arts", "arts", "Fine arts, music, design, theatre, film"),
+      ST_opt("Other", "other"),
     ]}],
     isRelevant: ST_always(),
   },
@@ -24224,8 +24237,8 @@ const ST_STUDENTS_QUESTIONS: ST_Question[] = [
     isRelevant: ST_always(),
   },
   {
-    id: "H3", layer: "how", title: "How much hand-holding do you want between tools?", priority: 32,
-    hint: "How clearly should we spell out 'copy this from here → paste it into there'?",
+    id: "H3", layer: "how", title: "How much guidance do you want between steps?", priority: 32,
+    hint: "Should we spell out exactly what to copy and paste between tools, or just point you in the right direction?",
     parts: [{ field: "handoffNeed", type: "single", options: [
       ST_opt("Walk me through everything", "high"), ST_opt("Some guidance", "medium"), ST_opt("Just point me to the tools", "low"),
     ]}],
@@ -24245,11 +24258,11 @@ const ST_STUDENTS_QUESTIONS: ST_Question[] = [
   },
   // ── WHY layer ──
   {
-    id: "W1", layer: "why", title: "Budget and risk tolerance?", priority: 40,
-    hint: "'Free' keeps recommendations free. 'Proven' filters out newer, less tested tools.",
+    id: "W1", layer: "why", title: "What's your budget?", priority: 40,
+    hint: "This filters which tools we recommend and how established they need to be.",
     parts: [
       { field: "budget", label: "Budget", type: "single", options: [ST_opt("Free only", "free"), ST_opt("Student discount okay", "student_discount"), ST_opt("Flexible budget", "flexible")] },
-      { field: "riskTolerance", label: "Risk", type: "single", options: [ST_opt("Proven and trusted", "safe"), ST_opt("Open to trying new tools", "experimental")] },
+      { field: "riskTolerance", label: "How new can the tool be?", type: "single", options: [ST_opt("Well-known and proven", "safe"), ST_opt("Open to newer tools", "experimental")] },
     ],
     isRelevant: ST_always(),
   },
@@ -24262,10 +24275,10 @@ const ST_STUDENTS_QUESTIONS: ST_Question[] = [
     isRelevant: ST_always(),
   },
   {
-    id: "W3", layer: "why", title: "What kind of tools do you prefer?", priority: 42,
-    hint: "Pick what matters most. Skip if you don't mind either way.",
+    id: "W3", layer: "why", title: "What matters most in a tool?", priority: 42,
+    hint: "This helps us pick between similar tools. No wrong answer.",
     parts: [{ field: "toolPref", type: "single", options: [
-      ST_opt("Familiar, trusted brands", "familiar"), ST_opt("Open to new tools", "new_tools"), ST_opt("Easiest to learn", "easiest"),
+      ST_opt("Well-known and trusted", "familiar"), ST_opt("New and cutting-edge", "new_tools"), ST_opt("Easiest to learn", "easiest"),
     ]}],
     isRelevant: ST_always(),
   },
@@ -24281,8 +24294,8 @@ const ST_STUDENTS_QUESTIONS: ST_Question[] = [
     isRelevant: ST_always(),
   },
   {
-    id: "W5", layer: "why", title: "How do you feel about switching between different AI tools?", priority: 44,
-    hint: "No wrong answer. 'One tool' means we'll maximize what your main AI can do. 'Best tool' means we'll pick specialists even if it means learning new ones.",
+    id: "W5", layer: "why", title: "One tool or many?", priority: 44,
+    hint: "Should we recommend one main AI tool for most steps, or pick the best specialist for each step?",
     parts: [{ field: "toolSwitchPref", type: "single", options: [
       ST_opt("I prefer sticking to one main tool for everything", "single"),
       ST_opt("I'm open to specialists when they're clearly better", "open"),
@@ -24488,17 +24501,17 @@ function ST_buildHowComponents(stage: ST_Stage, tool: ST_ToolProfile, nextStage:
 
 function ST_renderHowText(components: any, depth: string, answers?: any): string {
   if (!components) return "";
-  let text: string;
-  if (depth === "short") text = `${components.context} ${components.action}`;
+  let sections: string[];
+  if (depth === "short") sections = [components.context, components.action].filter(Boolean);
   else if (depth === "detailed") {
-    text = [components.context, components.setup, components.inputs, components.action, components.output, components.handoff, components.watchOut, components.x1Note]
-      .filter(Boolean).join("\n\n");
+    sections = [components.context, components.setup, components.inputs, components.action, components.output, components.handoff, components.watchOut, components.x1Note]
+      .filter(Boolean);
   } else {
-    text = [components.context, components.setup, components.action, components.handoff].filter(Boolean).join("\n\n");
+    sections = [components.context, components.setup, components.action, components.handoff].filter(Boolean);
   }
-  if (answers?.toolSwitchPref === "single") text += "\n\nTip: You can do this step in your main AI tool instead of a specialist — ask it directly.";
-  if (answers?.toolSwitchPref === "best") text += "\n\nThis is a specialist tool picked for this exact stage — it'll outperform a general AI here.";
-  return text;
+  if (answers?.toolSwitchPref === "single") sections.push("Tip: You can do this step in your main AI tool instead of a specialist — ask it directly.");
+  if (answers?.toolSwitchPref === "best") sections.push("This is a specialist tool picked for this exact stage — it'll outperform a general AI here.");
+  return sections.join("\n");
 }
 
 
@@ -25402,21 +25415,22 @@ function HowItWorks() {
 
 function FieldsStrip() {
   const fields = [
-    "Content creation", "Marketing", "Healthcare", "Legal", "Design",
-    "IT / Engineering", "HR", "Education", "Management", "Finance",
+    "Content creation", "Marketing", "Education", "Students", "Healthcare", "Legal", "Design",
+    "IT / Engineering", "HR", "Management", "Finance",
   ];
+  const LIVE_COUNT = 4;
   return (
     <section className="fg-fields" data-reveal>
       <div className="fg-sec-eyebrow" data-reveal>Made for every kind of work</div>
       <h2 className="fg-sec-h" data-reveal="glow">One engine. Every profession.</h2>
       <p className="fg-sec-sub" data-reveal>
-        Content creation is just the first map. The same engine is coming for the work a doctor does,
-        a lawyer does, a teacher does, a designer does — every field, mapped with the same care.
+        Four fields are live — content creation, marketing, education, and students. The same engine
+        is coming for healthcare, legal, design, and every other profession.
       </p>
       <div className="fg-fields-row" data-reveal-group>
         {fields.map((f, i) => (
-          <span key={f} className={`fg-field-chip ${i <= 1 ? "live" : ""}`} data-reveal>
-            {i <= 1 ? "✦ " : ""}{f}{i <= 1 ? " — live now" : ""}
+          <span key={f} className={`fg-field-chip ${i < LIVE_COUNT ? "live" : ""}`} data-reveal>
+            {i < LIVE_COUNT ? "✦ " : ""}{f}{i < LIVE_COUNT ? " — live" : ""}
           </span>
         ))}
       </div>
@@ -25974,10 +25988,10 @@ function Tag({ k, v }: any) {
 function BriefCard({ brief, ai }: any) {
   return (
     <div className="fg-brief">
-      <div className="fg-brief-h">✦ Your game plan</div>
-      <div className="fg-brief-row"><span className="fg-brief-k">What you're doing</span><span className="fg-brief-v">{brief.play}</span></div>
-      <div className="fg-brief-row"><span className="fg-brief-k">Where to focus</span><span className="fg-brief-v">{brief.nail}</span></div>
-      <div className="fg-brief-row"><span className="fg-brief-k">Watch out for</span><span className="fg-brief-v">{brief.risk}</span></div>
+      <div className="fg-brief-h">✦ Your strategy at a glance</div>
+      <div className="fg-brief-row"><span className="fg-brief-k">Your approach</span><span className="fg-brief-v">{brief.play}</span></div>
+      <div className="fg-brief-row"><span className="fg-brief-k">Focus here</span><span className="fg-brief-v">{brief.nail}</span></div>
+      <div className="fg-brief-row"><span className="fg-brief-k">Risk to avoid</span><span className="fg-brief-v">{brief.risk}</span></div>
     </div>
   );
 }
@@ -26078,9 +26092,11 @@ function StarStep({ step, index, isOpen, isLast, onToggle, onFeedback }: any) {
           <div className="fg-section-label">How to do it {step.aiGenerated && <span className="fg-ai-mark">✦ AI</span>}</div>
           <p className="fg-how-text">{step.how}</p>
 
+          {step.handoff && <div className="fg-handoff">{step.handoff}</div>}
+
           <div className="fg-coach">
-            <div className="fg-coach-cell pro"><span className="fg-coach-k">✓ Pro move</span>{step.proMove}</div>
-            <div className="fg-coach-cell avoid"><span className="fg-coach-k">✕ Avoid</span>{step.avoid}</div>
+            <div className="fg-coach-cell pro"><span className="fg-coach-k">✓ Pro tip</span>{step.proMove}</div>
+            <div className="fg-coach-cell avoid"><span className="fg-coach-k">✕ Common mistake</span>{step.avoid}</div>
           </div>
 
           {step.prompt && <PromptBox prompt={step.prompt} />}
@@ -26093,7 +26109,11 @@ function StarStep({ step, index, isOpen, isLast, onToggle, onFeedback }: any) {
                   <div className={`fg-rt ${st.rank === 1 ? "rt-1" : ""}`} key={st.tool.id}>
                     <span className="fg-rt-rank">#{st.rank}</span>
                     <div className="fg-rt-info">
-                      <div className="fg-rt-name">{st.tool.name} <span className="fg-rt-score">score {st.score}</span></div>
+                      <div className="fg-rt-name">
+                        {st.tool.name}
+                        {st.tool.toolUrl && <a className="fg-rt-score" href={st.tool.toolUrl} target="_blank" rel="noopener" style={{ textDecoration: "none", marginLeft: "8px" }}>Open ↗</a>}
+                        {st.fallback && <span className="fg-rt-score"> · limited match</span>}
+                      </div>
                       <div className="fg-rt-why">{st.why}</div>
                       <div className="fg-rt-pills">
                         <span className="fg-rt-pill">{st.tool.startingPrice || "—"}</span>
@@ -26106,8 +26126,6 @@ function StarStep({ step, index, isOpen, isLast, onToggle, onFeedback }: any) {
               </div>
             </>
           )}
-
-          {step.handoff && <div className="fg-handoff">{step.handoff}</div>}
 
           <div className="fg-fb">
             <span className="fg-fb-l">On {primary ? primary.name : "this pick"}:</span>
@@ -26316,10 +26334,10 @@ function MarketingRoadmap({ answers, onRestart }: any) {
 
       {brief && (
         <div className="fg-brief">
-          <div className="fg-brief-h">✦ Your game plan</div>
-          <div className="fg-brief-row"><span className="fg-brief-k">The play</span><span className="fg-brief-v">{brief.play}</span></div>
-          <div className="fg-brief-row"><span className="fg-brief-k">Nail this</span><span className="fg-brief-v">{brief.nail}</span></div>
-          <div className="fg-brief-row"><span className="fg-brief-k">Watch out for</span><span className="fg-brief-v">{brief.risk}</span></div>
+          <div className="fg-brief-h">✦ Your strategy at a glance</div>
+          <div className="fg-brief-row"><span className="fg-brief-k">Your approach</span><span className="fg-brief-v">{brief.play}</span></div>
+          <div className="fg-brief-row"><span className="fg-brief-k">Focus here</span><span className="fg-brief-v">{brief.nail}</span></div>
+          <div className="fg-brief-row"><span className="fg-brief-k">Risk to avoid</span><span className="fg-brief-v">{brief.risk}</span></div>
         </div>
       )}
 
@@ -26594,10 +26612,10 @@ function EducationRoadmap({ answers, onRestart }: any) {
 
       {brief && (
         <div className="fg-brief">
-          <div className="fg-brief-h">✦ Your game plan</div>
-          <div className="fg-brief-row"><span className="fg-brief-k">The play</span><span className="fg-brief-v">{brief.play}</span></div>
-          <div className="fg-brief-row"><span className="fg-brief-k">Nail this</span><span className="fg-brief-v">{brief.nail}</span></div>
-          <div className="fg-brief-row"><span className="fg-brief-k">Watch out for</span><span className="fg-brief-v">{brief.risk}</span></div>
+          <div className="fg-brief-h">✦ Your strategy at a glance</div>
+          <div className="fg-brief-row"><span className="fg-brief-k">Your approach</span><span className="fg-brief-v">{brief.play}</span></div>
+          <div className="fg-brief-row"><span className="fg-brief-k">Focus here</span><span className="fg-brief-v">{brief.nail}</span></div>
+          <div className="fg-brief-row"><span className="fg-brief-k">Risk to avoid</span><span className="fg-brief-v">{brief.risk}</span></div>
         </div>
       )}
 
@@ -26848,10 +26866,10 @@ function StudentsRoadmap({ answers, onRestart }: any) {
 
       {brief && (
         <div className="fg-brief">
-          <div className="fg-brief-h">✦ Your game plan</div>
-          <div className="fg-brief-row"><span className="fg-brief-k">The play</span><span className="fg-brief-v">{brief.play}</span></div>
-          <div className="fg-brief-row"><span className="fg-brief-k">Nail this</span><span className="fg-brief-v">{brief.nail}</span></div>
-          <div className="fg-brief-row"><span className="fg-brief-k">Watch out for</span><span className="fg-brief-v">{brief.risk}</span></div>
+          <div className="fg-brief-h">✦ Your strategy at a glance</div>
+          <div className="fg-brief-row"><span className="fg-brief-k">Your approach</span><span className="fg-brief-v">{brief.play}</span></div>
+          <div className="fg-brief-row"><span className="fg-brief-k">Focus here</span><span className="fg-brief-v">{brief.nail}</span></div>
+          <div className="fg-brief-row"><span className="fg-brief-k">Risk to avoid</span><span className="fg-brief-v">{brief.risk}</span></div>
         </div>
       )}
 
@@ -27540,7 +27558,7 @@ b{font-weight:700;color:var(--text)}
 .fg-brief-h{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--purple-glow);margin-bottom:16px}
 .fg-brief-row{display:flex;gap:14px;padding:10px 0;border-top:1px solid rgba(155,140,255,.18)}
 .fg-brief-row:first-of-type{border-top:none;padding-top:0}
-.fg-brief-k{flex-shrink:0;width:90px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--purple-glow);padding-top:2px}
+.fg-brief-k{flex-shrink:0;width:100px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--purple-glow);padding-top:2px}
 .fg-brief-v{font-size:14.5px;color:var(--text);line-height:1.55;flex:1}
 
 .fg-quickstart{background:linear-gradient(135deg,rgba(245,197,66,.12),rgba(155,140,255,.10));border:1px solid var(--gold);border-radius:18px;padding:22px 26px;margin-bottom:18px;backdrop-filter:blur(20px);box-shadow:0 0 30px rgba(245,197,66,.15)}
@@ -27609,7 +27627,7 @@ b{font-weight:700;color:var(--text)}
 .fg-flow-cell.tool{font-weight:800;color:var(--gold);background:var(--gold-soft);padding:4px 10px;border-radius:6px;font-size:12.5px}
 .fg-flow-cell.out{color:var(--text);font-weight:600}
 .fg-flow-arrow{color:var(--text-faint);font-weight:800}
-.fg-how-text{font-size:14.5px;color:var(--text);line-height:1.7;background:var(--accent-soft);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;padding:14px 16px;margin:0}
+.fg-how-text{font-size:14.5px;color:var(--text);line-height:1.7;background:var(--accent-soft);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;padding:14px 16px;margin:0;white-space:pre-line}
 .fg-coach{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
 .fg-coach-cell{font-size:13px;line-height:1.55;border-radius:10px;padding:12px 14px}
 .fg-coach-cell .fg-coach-k{display:block;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
@@ -27618,11 +27636,11 @@ b{font-weight:700;color:var(--text)}
 .fg-coach-cell.avoid{background:var(--red-soft);color:var(--text);border:1px solid var(--red-soft)}
 .fg-coach-cell.avoid .fg-coach-k{color:var(--red)}
 
-.fg-prompt{margin-top:14px;border:1px solid var(--line-strong);border-radius:12px;overflow:hidden;background:#05070F}
-.fg-prompt-head{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#080B18;color:var(--text-soft);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;border-bottom:1px solid var(--line)}
+.fg-prompt{margin-top:14px;border:1px solid var(--line-strong);border-radius:12px;overflow:hidden;background:var(--bg)}
+.fg-prompt-head{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg-card);color:var(--text-soft);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;border-bottom:1px solid var(--line)}
 .fg-copy-btn{font-size:11px;font-weight:700;color:#fff;background:var(--accent);border-radius:6px;padding:5px 12px;transition:background .15s}
 .fg-copy-btn:hover{background:var(--purple)}
-.fg-prompt-body{margin:0;padding:14px;color:#D8E2F0;font-family:'SF Mono',ui-monospace,Menlo,Consolas,monospace;font-size:12px;line-height:1.65;white-space:pre-wrap;word-break:break-word;max-height:280px;overflow:auto}
+.fg-prompt-body{margin:0;padding:14px;color:var(--text);font-family:'SF Mono',ui-monospace,Menlo,Consolas,monospace;font-size:12px;line-height:1.65;white-space:pre-wrap;word-break:break-word;max-height:280px;overflow:auto}
 
 .fg-tool-list{display:flex;flex-direction:column;gap:8px}
 .fg-rt{display:flex;gap:12px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px 14px;transition:border-color .15s}
